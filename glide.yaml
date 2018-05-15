@@ -1,0 +1,23 @@
+package: github.com/dpetzold/kube-top
+import:
+
+- package: github.com/airking05/termui
+- package: github.com/dustin/go-humanize
+
+- package: k8s.io/apiserver
+  version: kubernetes-1.10.0
+
+- package: k8s.io/metrics
+  version: kubernetes-1.10.0
+
+- package: k8s.io/api
+  version: kubernetes-1.10.0
+
+- package: k8s.io/apimachinery
+  version: kubernetes-1.10.0
+
+- package: k8s.io/kubernetes
+  version: v1.10.0
+
+- package: k8s.io/client-go
+  version: v7.0.0

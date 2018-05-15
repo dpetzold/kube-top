@@ -1,76 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"sort"
-	"time"
-
-	ui "github.com/airking05/termui"
+	ui "github.com/dpetzold/termui"
 	api_v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/duration"
 )
 
-type NodeDisplay struct {
-	Node        api_v1.Node
-	CpuGauge    *ui.Gauge
-	MemoryGauge *ui.Gauge
-}
+var (
+	kubeClient *KubeClient
+	Namespace  string
+)
 
-func EventsWidget() *ui.Table {
-	w := ui.NewTable()
-	w.Height = 20
-	w.BorderLabel = "Events"
-	w.TextAlign = ui.AlignLeft
-	w.Separator = false
-	w.Analysis()
-	w.SetSize()
-	return w
-}
+func TopRun(k *KubeClient, namespace string) {
 
-func PodsWidget() *ui.Table {
-	w := ui.NewTable()
-	w.Height = 30
-	w.BorderLabel = "Pods"
-	w.TextAlign = ui.AlignLeft
-	w.Separator = false
-	w.Analysis()
-	w.SetSize()
-	return w
-}
+	kubeClient = k
+	Namespace = namespace
 
-func ListWidget(labels []string) *ui.List {
-
-	var items []string
-	for _, label := range labels {
-		items = append(items, []string{
-			"",
-			fmt.Sprintf("    %s", label),
-			"",
-		}...)
-	}
-
-	w := ui.NewList()
-	w.Border = false
-	w.Items = items
-	w.Height = len(labels) * 3
-	return w
-}
-
-func GaugeWidget(label string, barColor ui.Attribute) *ui.Gauge {
-
-	w := ui.NewGauge()
-	w.BarColor = barColor
-	w.BorderFg = ui.ColorWhite
-	w.BorderLabelFg = ui.ColorCyan
-	w.BorderLabel = label
-	w.Height = 3
-	w.LabelAlign = ui.AlignRight
-	w.PaddingBottom = 0
-	w.Percent = 0
-	return w
-}
-
-func TopInit(k *KubeClient) {
 	if err := ui.Init(); err != nil {
 		panic(err)
 	}
@@ -81,42 +25,45 @@ func TopInit(k *KubeClient) {
 		panic(err.Error())
 	}
 
-	node_gauges := make(map[string]*NodeDisplay)
+	nodeGauges := make(map[string]*NodeDisplay)
 	var node_names []string
+	var node_capacity []api_v1.ResourceList
 
 	for _, node := range nodes {
 		name := node.GetName()
-		node_gauges[name] = &NodeDisplay{
+		capacity := NodeCapacity(&node)
+		nodeGauges[name] = &NodeDisplay{
 			Node:        node,
-			CpuGauge:    GaugeWidget("Cpu", ui.ColorRed),
-			MemoryGauge: GaugeWidget("Mem", ui.ColorCyan),
+			CpuGauge:    GaugePanel("Cpu", ui.ColorRed),
+			MemoryGauge: GaugePanel("Mem", ui.ColorCyan),
 		}
 		node_names = append(node_names, name)
+		node_capacity = append(node_capacity, capacity)
 	}
 
 	var cpu_column []ui.GridBufferer
 	var mem_column []ui.GridBufferer
 
-	for _, nd := range node_gauges {
+	for _, nd := range nodeGauges {
 		cpu_column = append(cpu_column, nd.CpuGauge)
 		mem_column = append(mem_column, nd.MemoryGauge)
 	}
 
-	listWidget := ListWidget(node_names)
-	podsWidget := PodsWidget()
-	eventsWidget := EventsWidget()
+	listPanel := ListPanel(node_names, node_capacity)
+	containersPanel := ContainersPanel()
+	eventsPanel := EventsPanel()
 
 	ui.Body.AddRows(
 		ui.NewRow(
-			ui.NewCol(4, 0, listWidget),
+			ui.NewCol(4, 0, listPanel),
 			ui.NewCol(4, 0, cpu_column...),
 			ui.NewCol(4, 0, mem_column...),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, podsWidget),
+			ui.NewCol(12, 0, containersPanel),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, eventsWidget),
+			ui.NewCol(12, 0, eventsPanel),
 		),
 	)
 
@@ -129,73 +76,9 @@ func TopInit(k *KubeClient) {
 
 	ui.Handle("/timer/1s", func(e ui.Event) {
 
-		for _, nd := range node_gauges {
-			r, _ := k.NodeResourceUsage(&nd.Node)
-			nd.MemoryGauge.Percent = r.PercentMemory
-			nd.MemoryGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentMemory, r.MemoryUsage.String())
-			nd.CpuGauge.Percent = r.PercentCpu
-			nd.CpuGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentCpu, r.CpuUsage.String())
-		}
-
-		metrics, err := k.PodResourceUsage("")
-		if err != nil {
-			panic(err.Error())
-		}
-
-		sort.Slice(metrics, func(i, j int) bool {
-			q := metrics[j].CpuUsage.ToQuantity()
-			return metrics[i].CpuUsage.ToQuantity().Cmp(*q) > 0
-		})
-
-		var nmax int
-		for _, m := range metrics {
-			if len(m.Name) > nmax {
-				nmax = len(m.Name)
-			}
-		}
-
-		pods := [][]string{
-			[]string{"Pod/Container", "Cpu", "Memory"},
-			[]string{"", "", ""},
-		}
-
-		for _, m := range metrics {
-			pods = append(pods, []string{m.Name, m.CpuUsage.String(), m.MemoryUsage.String()})
-		}
-
-		podsWidget.Rows = pods[0:28]
-		podsWidget.Analysis()
-		podsWidget.SetSize()
-
-		eventRows := [][]string{
-			[]string{"Last Seen", "Count", "Name", "Kind", "Type", "Reason", "Message"},
-			[]string{"", "", "", "", "", "", ""},
-		}
-
-		events, err := k.Events("")
-		if err != nil {
-			panic(err.Error())
-		}
-
-		for _, e := range events {
-			eventRows = append(eventRows, []string{
-				duration.ShortHumanDuration(time.Now().Sub(e.LastTimestamp.Time)),
-				fmt.Sprintf("%d", e.Count),
-				e.ObjectMeta.Name[0:20],
-				e.InvolvedObject.Kind,
-				e.Type,
-				e.Reason,
-				e.Message,
-			})
-		}
-
-		if len(eventRows) > 18 {
-			eventRows = eventRows[0:18]
-		}
-
-		eventsWidget.Rows = eventRows
-		eventsWidget.Analysis()
-		eventsWidget.SetSize()
+		updateNodes(nodeGauges)
+		updateContainers(containersPanel)
+		updateEvents(eventsPanel)
 
 		ui.Body.Align()
 		ui.Render(ui.Body)

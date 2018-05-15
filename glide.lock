@@ -1,13 +1,11 @@
-hash: c40ca1cce4eb2c0b1459d2f118c552a6b7983fa7bfeb03c998265d6f8520734e
-updated: 2018-05-15T08:31:02.343647111-07:00
+hash: 00dc62aa32d3189ae0f9b21e3fbfc5ad4afb083001fa4a63fed3d6574fa0fe15
+updated: 2018-05-15T20:32:44.865314096-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/airking05/termui
-  version: c2850e27cf42f779933255c5ac873f0df1da09fd
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -17,6 +15,8 @@ imports:
   subpackages:
   - digestset
   - reference
+- name: github.com/dpetzold/termui
+  version: 8f33a410a8de009cf4d9e5f27fc2fb919e57e72b
 - name: github.com/dustin/go-humanize
   version: 02af3965c54e8cacf948b97fef38925c4120652c
 - name: github.com/ghodss/yaml

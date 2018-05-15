@@ -1,7 +1,9 @@
 package: github.com/dpetzold/kube-top
 import:
 
-- package: github.com/airking05/termui
+- package: github.com/dpetzold/termui
+  version: 8f33a410a8de009cf4d9e5f27fc2fb919e57e72b
+
 - package: github.com/dustin/go-humanize
 
 - package: k8s.io/apiserver

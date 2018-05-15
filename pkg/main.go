@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/pkg/kubectl/metricsutil"
 )
 
 var GitCommit string
@@ -31,6 +32,8 @@ func main() {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 
+	namespace := flag.String("namespace", "default", "Specify the namespace")
+
 	flag.Parse()
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
@@ -43,7 +46,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	k := NewKubeClient(clientset)
+	heapsterClient := metricsutil.DefaultHeapsterMetricsClient(clientset.Core())
+	k := NewKubeClient(clientset, heapsterClient)
 
-	TopInit(k)
+	TopRun(k, *namespace)
 }

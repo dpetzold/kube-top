@@ -10,7 +10,7 @@ import (
 
 func EventsPanel() *ui.Table {
 	p := ui.NewTable()
-	p.Height = 20
+	p.Height = EVENTS_PANEL_HEIGHT
 	p.BorderLabel = "Events"
 	p.TextAlign = ui.AlignLeft
 	p.Separator = false
@@ -42,8 +42,9 @@ func updateEvents(eventsPanel *ui.Table) {
 		})
 	}
 
-	if len(eventRows) > 18 {
-		eventRows = eventRows[0:18]
+	max_rows := EVENTS_PANEL_HEIGHT - 2
+	if len(eventRows) > max_rows {
+		eventRows = eventRows[0:max_rows]
 	}
 
 	eventsPanel.Rows = eventRows

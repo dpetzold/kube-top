@@ -9,13 +9,19 @@ import (
 )
 
 const (
-	NODE_DISPLAY_COUNT = 3
+	NODE_DISPLAY_COUNT     = 3
+	REFRESH_SECONDS        = 3
+	CONTAINER_PANEL_HEIGHT = 30
+	EVENTS_PANEL_HEIGHT    = 20
 )
 
 var (
-	kubeClient  *KubeClient
-	Namespace   string
-	NODE_GAUGES map[string]*NodeGauges
+	kubeClient      *KubeClient
+	Namespace       string
+	NODE_GAUGES     map[string]*NodeGauges
+	NODE_PANEL      *ui.List
+	CONTAINER_PANEL *ui.Table
+	EVENTS_PANEL    *ui.Table
 )
 
 type KubeClient struct {
@@ -34,6 +40,7 @@ type ContainerStatus struct {
 	Status   string
 	Ready    bool
 	Restarts int
+	Age      string
 }
 
 type CpuResource struct {

@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"sort"
+	"time"
 
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/duration"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -184,6 +187,7 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 			Status:   status,
 			Ready:    ready,
 			Restarts: restarts,
+			Age:      duration.ShortHumanDuration(time.Now().Sub(pod.CreationTimestamp.Time)),
 		}
 	}
 
@@ -323,13 +327,17 @@ func (k *KubeClient) ClusterCapacity() (capacity api_v1.ResourceList, err error)
 // Returns events from the specified namespace
 func (k *KubeClient) Events(namespace string) ([]api_v1.Event, error) {
 
-	events, err := k.clientset.Core().Events(namespace).List(metav1.ListOptions{})
+	eventList, err := k.clientset.Core().Events(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	return events.Items, nil
+	events := eventList.Items
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].LastTimestamp.Time.After(events[j].LastTimestamp.Time)
+	})
 
+	return events, nil
 }
 
 // Returns nodes in the cluster

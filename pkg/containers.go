@@ -9,7 +9,7 @@ import (
 
 func ContainersPanel() *ui.Table {
 	p := ui.NewTable()
-	p.Height = 30
+	p.Height = CONTAINER_PANEL_HEIGHT
 	p.BorderLabel = "Containers"
 	p.TextAlign = ui.AlignLeft
 	p.Separator = false
@@ -34,7 +34,7 @@ func updateContainers(containersPanel *ui.Table) {
 	})
 
 	rows := [][]string{
-		[]string{"Pod/Container", "Ready", "Status", "Restarts", "Cpu", "Memory"},
+		[]string{"Pod/Container", "Ready", "Status", "Restarts", "Cpu", "Memory", "Age"},
 	}
 
 	for _, c := range containers {
@@ -42,18 +42,28 @@ func updateContainers(containersPanel *ui.Table) {
 		if c.Status.Ready {
 			ready = "1"
 		}
+
+		cpuResources := ""
+		memoryResources := ""
+		if c.Resources != nil {
+			cpuResources = c.Resources.CpuUsage.String()
+			memoryResources = c.Resources.MemoryUsage.String()
+		}
+
 		rows = append(rows, []string{
 			c.Name,
 			ready,
 			c.Status.Status,
 			fmt.Sprintf("%d", c.Status.Restarts),
-			c.Resources.CpuUsage.String(),
-			c.Resources.MemoryUsage.String(),
+			cpuResources,
+			memoryResources,
+			c.Status.Age,
 		})
 	}
 
-	if len(rows) > 28 {
-		rows = rows[0:28]
+	max_rows := CONTAINER_PANEL_HEIGHT - 2
+	if len(rows) > max_rows {
+		rows = rows[0:max_rows]
 	}
 
 	containersPanel.Rows = rows

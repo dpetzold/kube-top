@@ -107,7 +107,7 @@ func updateNodes(nodePanel *ui.List) error {
 	nodePanel.Items = items
 
 	for _, nd := range NODE_GAUGES {
-		r, _ := kubeClient.NodeNodeResources(&nd.Node)
+		r, err := kubeClient.NodeNodeResources(&nd.Node)
 		if err != nil {
 			return err
 		}

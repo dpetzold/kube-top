@@ -1,8 +1,17 @@
 package main
 
 import (
+	"fmt"
+	"time"
+
 	ui "github.com/dpetzold/termui"
 )
+
+func UpdatePanels() {
+	updateNodes(NODE_PANEL)
+	updateContainers(CONTAINER_PANEL)
+	updateEvents(EVENTS_PANEL)
+}
 
 func TopRun(k *KubeClient, namespace string) {
 
@@ -14,23 +23,28 @@ func TopRun(k *KubeClient, namespace string) {
 	}
 	defer ui.Close()
 
-	nodePanel, cpu_column, mem_column := NodePanel()
-	containersPanel := ContainersPanel()
-	eventsPanel := EventsPanel()
+	var cpu_column []ui.GridBufferer
+	var mem_column []ui.GridBufferer
+
+	NODE_PANEL, cpu_column, mem_column = NodePanel()
+	CONTAINER_PANEL = ContainersPanel()
+	EVENTS_PANEL = EventsPanel()
 
 	ui.Body.AddRows(
 		ui.NewRow(
-			ui.NewCol(4, 0, nodePanel),
+			ui.NewCol(4, 0, NODE_PANEL),
 			ui.NewCol(4, 0, cpu_column...),
 			ui.NewCol(4, 0, mem_column...),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, containersPanel),
+			ui.NewCol(12, 0, CONTAINER_PANEL),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, eventsPanel),
+			ui.NewCol(12, 0, EVENTS_PANEL),
 		),
 	)
+
+	UpdatePanels()
 
 	ui.Body.Align()
 	ui.Render(ui.Body)
@@ -39,12 +53,12 @@ func TopRun(k *KubeClient, namespace string) {
 		ui.StopLoop()
 	})
 
-	ui.Handle("/timer/1s", func(e ui.Event) {
+	refresh_duration := time.Second * REFRESH_SECONDS
+	timer_path := fmt.Sprintf("/timer/%s", refresh_duration)
+	ui.DefaultEvtStream.Merge("timer", ui.NewTimerCh(refresh_duration))
 
-		updateNodes(nodePanel)
-		updateContainers(containersPanel)
-		updateEvents(eventsPanel)
-
+	ui.Handle(timer_path, func(ui.Event) {
+		UpdatePanels()
 		ui.Body.Align()
 		ui.Render(ui.Body)
 	})

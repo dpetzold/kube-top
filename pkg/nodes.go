@@ -2,42 +2,47 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	ui "github.com/dpetzold/termui"
 	api_v1 "k8s.io/api/core/v1"
 )
 
-type NodeDisplay struct {
-	Node        api_v1.Node
-	CpuGauge    *ui.Gauge
-	MemoryGauge *ui.Gauge
-}
+func NodePanel() (*ui.List, []ui.GridBufferer, []ui.GridBufferer) {
 
-func ListPanel(names []string, capacities []api_v1.ResourceList) *ui.List {
+	nodes, err := kubeClient.Nodes()
+	if err != nil {
+		panic(err.Error())
+	}
 
-	var items []string
-	for i, name := range names {
+	NODE_GAUGES = make(map[string]*NodeGauges)
+	var node_names []string
+	var capacities []api_v1.ResourceList
 
-		capacity := capacities[i]
+	for _, node := range nodes {
+		name := node.GetName()
+		capacity := NodeCapacity(&node)
+		NODE_GAUGES[name] = &NodeGauges{
+			Node:        node,
+			CpuGauge:    GaugePanel("Cpu", ui.ColorRed),
+			MemoryGauge: GaugePanel("Mem", ui.ColorCyan),
+		}
+		node_names = append(node_names, name)
+		capacities = append(capacities, capacity)
+	}
 
-		cpuR := capacity[api_v1.ResourceCPU]
-		cpu := NewCpuResource(cpuR.MilliValue())
+	var cpu_column []ui.GridBufferer
+	var mem_column []ui.GridBufferer
 
-		memR := capacity[api_v1.ResourceMemory]
-		mem := NewMemoryResource(memR.Value())
-
-		items = append(items, []string{
-			fmt.Sprintf(" %s", name),
-			fmt.Sprintf("   Cpu: %s  Mem: %s", cpu.String(), mem.String()),
-			"",
-		}...)
+	for _, nd := range NODE_GAUGES {
+		cpu_column = append(cpu_column, nd.CpuGauge)
+		mem_column = append(mem_column, nd.MemoryGauge)
 	}
 
 	p := ui.NewList()
 	p.Border = false
-	p.Items = items
-	p.Height = len(names) * 3
-	return p
+	p.Height = len(node_names) * NODE_DISPLAY_COUNT
+	return p, cpu_column, mem_column
 }
 
 func GaugePanel(label string, barColor ui.Attribute) *ui.Gauge {
@@ -49,17 +54,69 @@ func GaugePanel(label string, barColor ui.Attribute) *ui.Gauge {
 	p.BorderLabel = label
 	p.Height = 3
 	p.LabelAlign = ui.AlignRight
-	p.PaddingBottom = 0
-	p.Percent = 0
 	return p
 }
 
-func updateNodes(nodeGauges map[string]*NodeDisplay) {
-	for _, nd := range nodeGauges {
-		r, _ := kubeClient.NodeResourceUsage(&nd.Node)
+func updateNodes(nodePanel *ui.List) error {
+
+	nodes, err := kubeClient.Nodes()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	nodes = nodes[0:NODE_DISPLAY_COUNT]
+
+	var node_resources []*NodeResources
+
+	for _, node := range nodes {
+		name := node.GetName()
+		capacity := NodeCapacity(&node)
+
+		pods, err := kubeClient.ActivePods("", name)
+		if err != nil {
+			return err
+		}
+
+		cpuQuantity := capacity[api_v1.ResourceCPU]
+		memQuantity := capacity[api_v1.ResourceMemory]
+
+		node_resources = append(node_resources, &NodeResources{
+			Name:           name,
+			Pods:           len(pods),
+			CpuCapacity:    NewCpuResource(cpuQuantity.MilliValue()),
+			MemoryCapacity: NewMemoryResource(memQuantity.Value()),
+		})
+	}
+
+	var items []string
+	resource_fmt := "%s[%s:](fg-cyan) [%s](fg-cyan,fg-bold)%s"
+
+	for _, n := range node_resources {
+
+		resources := fmt.Sprintf(resource_fmt, "  ", "Cpu", n.CpuCapacity.String(), "  ")
+		resources += fmt.Sprintf(resource_fmt, "", "Mem", n.MemoryCapacity.String(), "  ")
+		resources += fmt.Sprintf(resource_fmt, "", "Pods", strconv.FormatInt(int64(n.Pods), 10), "")
+
+		items = append(items, []string{
+			fmt.Sprintf(" [%s](fg-white,fg-bold)", n.Name),
+			resources,
+			"",
+		}...)
+	}
+
+	nodePanel.Items = items
+
+	for _, nd := range NODE_GAUGES {
+		r, _ := kubeClient.NodeNodeResources(&nd.Node)
+		if err != nil {
+			return err
+		}
+
 		nd.MemoryGauge.Percent = r.PercentMemory
 		nd.MemoryGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentMemory, r.MemoryUsage.String())
 		nd.CpuGauge.Percent = r.PercentCpu
 		nd.CpuGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentCpu, r.CpuUsage.String())
 	}
+
+	return nil
 }

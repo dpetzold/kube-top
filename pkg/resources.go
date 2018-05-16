@@ -11,10 +11,6 @@ func calcPercentage(dividend, divisor int64) int {
 	return int(float64(dividend) / float64(divisor) * 100)
 }
 
-type MemoryResource struct {
-	*resource.Quantity
-}
-
 func NewMemoryResource(value int64) *MemoryResource {
 	return &MemoryResource{resource.NewQuantity(value, resource.BinarySI)}
 }
@@ -33,10 +29,6 @@ func (r *MemoryResource) ToQuantity() *resource.Quantity {
 	return resource.NewQuantity(r.Value(), resource.BinarySI)
 }
 
-type CpuResource struct {
-	*resource.Quantity
-}
-
 func NewCpuResource(value int64) *CpuResource {
 	r := resource.NewMilliQuantity(value, resource.DecimalSI)
 	return &CpuResource{r}
@@ -53,25 +45,4 @@ func (r *CpuResource) calcPercentage(divisor *resource.Quantity) int {
 
 func (r *CpuResource) ToQuantity() *resource.Quantity {
 	return resource.NewMilliQuantity(r.MilliValue(), resource.DecimalSI)
-}
-
-type ResourceUsage struct {
-	Name          string
-	CpuUsage      *CpuResource
-	PercentCpu    int
-	MemoryUsage   *MemoryResource
-	PercentMemory int
-}
-
-type ContainerResources struct {
-	Name               string
-	Namespace          string
-	CpuReq             *CpuResource
-	CpuLimit           *CpuResource
-	PercentCpuReq      int
-	PercentCpuLimit    int
-	MemReq             *MemoryResource
-	MemLimit           *MemoryResource
-	PercentMemoryReq   int
-	PercentMemoryLimit int
 }

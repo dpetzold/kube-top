@@ -12,24 +12,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/metricsutil"
 )
 
-type ContainerInfo struct {
-	Name      string
-	Status    *ContainerStatus
-	Resources *ResourceUsage
-}
-
-type ContainerStatus struct {
-	Name     string
-	Status   string
-	Ready    bool
-	Restarts int
-}
-
-type KubeClient struct {
-	clientset      *kubernetes.Clientset
-	heapsterClient *metricsutil.HeapsterMetricsClient
-}
-
 func NewKubeClient(
 	clientset *kubernetes.Clientset,
 	heapsterClient *metricsutil.HeapsterMetricsClient,
@@ -97,7 +79,7 @@ func NodeCapacity(node *api_v1.Node) api_v1.ResourceList {
 }
 
 // Return NodeResources struct for the specified object.
-func (k *KubeClient) NodeResourceUsage(node *api_v1.Node) (*ResourceUsage, error) {
+func (k *KubeClient) NodeNodeResources(node *api_v1.Node) (*NodeResources, error) {
 
 	metricsList, err := k.heapsterClient.GetNodeMetrics(node.GetName(), labels.Everything().String())
 	if err != nil {
@@ -106,6 +88,11 @@ func (k *KubeClient) NodeResourceUsage(node *api_v1.Node) (*ResourceUsage, error
 
 	if len(metricsList.Items) != 1 {
 		return nil, fmt.Errorf("Got bad number of results from client.GetNodeMetrics")
+	}
+
+	pods, err := k.ActivePods("", node.GetName())
+	if err != nil {
+		return nil, err
 	}
 
 	metrics := metricsList.Items[0]
@@ -118,8 +105,9 @@ func (k *KubeClient) NodeResourceUsage(node *api_v1.Node) (*ResourceUsage, error
 	cpuUsage := NewCpuResource(cpuQuantity.MilliValue())
 	memoryUsage := NewMemoryResource(memoryQuantity.Value())
 
-	return &ResourceUsage{
+	return &NodeResources{
 		Name:          node.GetName(),
+		Pods:          len(pods),
 		CpuUsage:      NewCpuResource(cpuQuantity.MilliValue()),
 		PercentCpu:    cpuUsage.calcPercentage(capacity.Cpu()),
 		MemoryUsage:   NewMemoryResource(memoryQuantity.Value()),
@@ -128,7 +116,7 @@ func (k *KubeClient) NodeResourceUsage(node *api_v1.Node) (*ResourceUsage, error
 }
 
 // Returns the resource usage of the pods in the specified namespace.
-func (k *KubeClient) ContainerResourceUsage(namespace string) (map[string]*ResourceUsage, error) {
+func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*NodeResources, error) {
 
 	allNamespaces := false
 	if namespace == "" {
@@ -140,7 +128,7 @@ func (k *KubeClient) ContainerResourceUsage(namespace string) (map[string]*Resou
 		return nil, err
 	}
 
-	pods := make(map[string]*ResourceUsage)
+	pods := make(map[string]*NodeResources)
 
 	for _, item := range metricsList.Items {
 
@@ -150,7 +138,7 @@ func (k *KubeClient) ContainerResourceUsage(namespace string) (map[string]*Resou
 			memoryQuantity := metrics.Usage[api_v1.ResourceMemory]
 			name := fmt.Sprintf("%s/%s", item.ObjectMeta.Name, metrics.Name)
 
-			pods[name] = &ResourceUsage{
+			pods[name] = &NodeResources{
 				Name:        name,
 				CpuUsage:    NewCpuResource(cpuQuantity.MilliValue()),
 				MemoryUsage: NewMemoryResource(memoryQuantity.Value()),
@@ -205,7 +193,7 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 
 func (k *KubeClient) Containers(namespace string) ([]*ContainerInfo, error) {
 
-	resource_map, err := k.ContainerResourceUsage(namespace)
+	resource_map, err := k.ContainerNodeResources(namespace)
 	if err != nil {
 		return nil, err
 	}

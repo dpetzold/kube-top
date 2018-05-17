@@ -3,11 +3,9 @@ package main
 import (
 	"fmt"
 	"sort"
-	"time"
 
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/duration"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -187,7 +185,7 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 			Status:   status,
 			Ready:    ready,
 			Restarts: restarts,
-			Age:      duration.ShortHumanDuration(time.Now().Sub(pod.CreationTimestamp.Time)),
+			Age:      timeToDurationStr(pod.CreationTimestamp.Time),
 		}
 	}
 

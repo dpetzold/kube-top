@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	ui "github.com/dpetzold/termui"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -16,17 +18,33 @@ const (
 )
 
 var (
-	kubeClient      *KubeClient
-	Namespace       string
-	NODE_GAUGES     map[string]*NodeGauges
-	NODE_PANEL      *ui.List
-	CONTAINER_PANEL *ui.Table
-	EVENTS_PANEL    *ui.Table
+	kubeClient     *KubeClient
+	Namespace      string
+	NODE_GAUGES    map[string]*NodeGauges
+	NodePanel      *ui.List
+	ContainerPanel *ui.Table
+	EventsPanel    *ui.Table
+	ContainerMaxes map[string]*ContainerMax
 )
 
 type KubeClient struct {
 	clientset      *kubernetes.Clientset
 	heapsterClient *metricsutil.HeapsterMetricsClient
+}
+
+type CpuResource struct {
+	*resource.Quantity
+}
+
+type MemoryResource struct {
+	*resource.Quantity
+}
+
+type ContainerMax struct {
+	Cpu        *CpuResource
+	CpuTime    time.Time
+	Memory     *MemoryResource
+	MemoryTime time.Time
 }
 
 type ContainerInfo struct {
@@ -41,14 +59,6 @@ type ContainerStatus struct {
 	Ready    bool
 	Restarts int
 	Age      string
-}
-
-type CpuResource struct {
-	*resource.Quantity
-}
-
-type MemoryResource struct {
-	*resource.Quantity
 }
 
 type NodeGauges struct {

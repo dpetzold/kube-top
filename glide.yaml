@@ -1,10 +1,12 @@
 package: github.com/dpetzold/kube-top
 import:
 
-- package: github.com/dpetzold/termui
-  version: 18838c492c18c12cd4a28cb9c635f4806da63be3
-
+- package: github.com/sirupsen/logrus
+- package: github.com/onrik/logrus/filename
 - package: github.com/dustin/go-humanize
+
+- package: github.com/dpetzold/termui
+  version: 93bef5915f19aa71bff8bdded7f751c0f8210215
 
 - package: k8s.io/apiserver
   version: kubernetes-1.10.0

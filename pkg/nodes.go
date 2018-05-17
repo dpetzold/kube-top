@@ -8,7 +8,7 @@ import (
 	api_v1 "k8s.io/api/core/v1"
 )
 
-func NodePanel() (*ui.List, []ui.GridBufferer, []ui.GridBufferer) {
+func NewNodePanel() (*ui.List, []ui.GridBufferer, []ui.GridBufferer) {
 
 	nodes, err := kubeClient.Nodes()
 	if err != nil {

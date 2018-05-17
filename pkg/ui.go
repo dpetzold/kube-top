@@ -2,18 +2,34 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	ui "github.com/dpetzold/termui"
+	"github.com/onrik/logrus/filename"
+	"github.com/sirupsen/logrus"
 )
 
 func UpdatePanels() {
-	updateNodes(NODE_PANEL)
-	updateContainers(CONTAINER_PANEL)
-	updateEvents(EVENTS_PANEL)
+	updateNodes(NodePanel)
+	updateContainers(ContainerPanel)
+	updateEvents(EventsPanel)
 }
 
+var log = logrus.New()
+
 func TopRun(k *KubeClient, namespace string) {
+
+	filenameHook := filename.NewHook()
+	filenameHook.Field = "source"
+	log.AddHook(filenameHook)
+
+	file, err := os.OpenFile("/tmp/kube-top.log", os.O_CREATE|os.O_WRONLY, 0666)
+	if err == nil {
+		log.Out = file
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+	}
 
 	kubeClient = k
 	Namespace = namespace
@@ -26,25 +42,30 @@ func TopRun(k *KubeClient, namespace string) {
 	var cpu_column []ui.GridBufferer
 	var mem_column []ui.GridBufferer
 
-	NODE_PANEL, cpu_column, mem_column = NodePanel()
-	CONTAINER_PANEL = ContainersPanel()
-	EVENTS_PANEL = EventsPanel()
+	ContainerMaxes = make(map[string]*ContainerMax)
+
+	NodePanel, cpu_column, mem_column = NewNodePanel()
+
+	containers_height := ui.TermHeight() - EVENTS_PANEL_HEIGHT - NodePanel.Height
+
+	log.Infof("%d %d %d %d", ui.TermHeight(), EVENTS_PANEL_HEIGHT, NodePanel.Height, containers_height)
+
+	ContainerPanel = NewContainersPanel(containers_height)
+	EventsPanel = NewEventsPanel()
 
 	ui.Body.AddRows(
 		ui.NewRow(
-			ui.NewCol(4, 0, NODE_PANEL),
+			ui.NewCol(4, 0, NodePanel),
 			ui.NewCol(4, 0, cpu_column...),
 			ui.NewCol(4, 0, mem_column...),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, CONTAINER_PANEL),
+			ui.NewCol(12, 0, ContainerPanel),
 		),
 		ui.NewRow(
-			ui.NewCol(12, 0, EVENTS_PANEL),
+			ui.NewCol(12, 0, EventsPanel),
 		),
 	)
-
-	UpdatePanels()
 
 	ui.Body.Align()
 	ui.Render(ui.Body)

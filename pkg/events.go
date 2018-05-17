@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	ui "github.com/dpetzold/termui"
-	"k8s.io/apimachinery/pkg/util/duration"
 )
 
-func EventsPanel() *ui.Table {
+func NewEventsPanel() *ui.Table {
 	p := ui.NewTable()
 	p.Height = EVENTS_PANEL_HEIGHT
 	p.BorderLabel = "Events"
@@ -16,7 +14,6 @@ func EventsPanel() *ui.Table {
 	p.Separator = false
 	p.Headers = true
 	p.Analysis()
-	p.SetSize()
 	return p
 }
 
@@ -32,7 +29,7 @@ func updateEvents(eventsPanel *ui.Table) {
 
 	for _, e := range events {
 		eventRows = append(eventRows, []string{
-			duration.ShortHumanDuration(time.Now().Sub(e.LastTimestamp.Time)),
+			timeToDurationStr(e.LastTimestamp.Time),
 			fmt.Sprintf("%d", e.Count),
 			e.ObjectMeta.Name[0:20],
 			e.InvolvedObject.Kind,
@@ -49,5 +46,4 @@ func updateEvents(eventsPanel *ui.Table) {
 
 	eventsPanel.Rows = eventRows
 	eventsPanel.Analysis()
-	eventsPanel.SetSize()
 }

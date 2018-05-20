@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/onrik/logrus/filename"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,6 +37,19 @@ func main() {
 
 	flag.Parse()
 
+	Namespace = *namespace
+
+	filenameHook := filename.NewHook()
+	filenameHook.Field = "source"
+	log.AddHook(filenameHook)
+
+	file, err := os.OpenFile("/tmp/kube-top.log", os.O_CREATE|os.O_WRONLY, 0666)
+	if err == nil {
+		log.Out = file
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+	}
+
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err.Error())
@@ -47,7 +61,7 @@ func main() {
 	}
 
 	heapsterClient := metricsutil.DefaultHeapsterMetricsClient(clientset.Core())
-	k := NewKubeClient(clientset, heapsterClient)
+	kubeClient = NewKubeClient(clientset, heapsterClient)
 
-	TopRun(k, *namespace)
+	KubeTop()
 }

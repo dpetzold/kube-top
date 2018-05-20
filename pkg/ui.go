@@ -2,15 +2,21 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	ui "github.com/dpetzold/termui"
-	"github.com/onrik/logrus/filename"
 )
 
-func UpdatePanels() {
+func Init() {
+	ContainerMaxes = make(map[string]*ContainerMax)
+	NodePanel = NewNodePanel()
+	containers_height := ui.TermHeight() - EVENTS_PANEL_HEIGHT - NodePanel.Height
+	ContainerPanel = NewContainersPanel(containers_height)
+	EventsPanel = NewEventsPanel(EVENTS_PANEL_HEIGHT)
+}
+
+func updatePanels() {
 	updateNodes(NodePanel)
 	updateContainers(ContainerPanel)
 	updateEvents(EventsPanel)
@@ -31,9 +37,8 @@ func Footer() *ui.Par {
 
 func createTimer(seconds time.Duration) string {
 	refresh_duration := time.Second * seconds
-	timer_path := fmt.Sprintf("/timer/%s", refresh_duration)
 	ui.DefaultEvtStream.Merge("timer", ui.NewTimerCh(refresh_duration))
-	return timer_path
+	return fmt.Sprintf("/timer/%s", refresh_duration)
 }
 
 func showWindow(displayFunc func()) {
@@ -43,32 +48,14 @@ func showWindow(displayFunc func()) {
 	ui.Render(ui.Body)
 }
 
-func TopRun(k *KubeClient, namespace string) {
-
-	filenameHook := filename.NewHook()
-	filenameHook.Field = "source"
-	log.AddHook(filenameHook)
-
-	file, err := os.OpenFile("/tmp/kube-top.log", os.O_CREATE|os.O_WRONLY, 0666)
-	if err == nil {
-		log.Out = file
-	} else {
-		log.Info("Failed to log to file, using default stderr")
-	}
-
-	kubeClient = k
-	Namespace = namespace
+func KubeTop() {
 
 	if err := ui.Init(); err != nil {
 		panic(err)
 	}
 	defer ui.Close()
 
-	ContainerMaxes = make(map[string]*ContainerMax)
-	NodePanel = NewNodePanel()
-	containers_height := ui.TermHeight() - EVENTS_PANEL_HEIGHT - NodePanel.Height
-	ContainerPanel = NewContainersPanel(containers_height)
-	EventsPanel = NewEventsPanel(EVENTS_PANEL_HEIGHT)
+	Init()
 
 	showWindow(ShowDashboard)
 
@@ -94,7 +81,7 @@ func TopRun(k *KubeClient, namespace string) {
 
 	timer_path := createTimer(REFRESH_SECONDS)
 	ui.Handle(timer_path, func(ui.Event) {
-		UpdatePanels()
+		updatePanels()
 	})
 
 	ui.Handle("/sys/wnd/resize", func(e ui.Event) {

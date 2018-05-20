@@ -7,5 +7,5 @@ jobs:
     working_directory: /go/src/github.com/dpetzold/kube-top
     steps:
       - checkout
-      - run: go get github.com/dpetzold/kube-top
+      - run: go get github.com/dpetzold/kube-top/...
       - run: go test -v ./...

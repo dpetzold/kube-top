@@ -19,6 +19,14 @@ func NewContainersPanel(height int) *ui.Table {
 	return p
 }
 
+func ShowContainers() {
+	ContainerPanel.Height = ui.TermHeight() - 1
+	ui.Body.Rows = []*ui.Row{
+		ui.NewRow(ui.NewCol(12, 0, ContainerPanel)),
+		ui.NewRow(ui.NewCol(12, 0, Footer())),
+	}
+}
+
 func updateContainers(containersPanel *ui.Table) {
 	containers, err := kubeClient.Containers(Namespace)
 	if err != nil {

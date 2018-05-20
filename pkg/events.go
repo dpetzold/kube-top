@@ -6,15 +6,23 @@ import (
 	ui "github.com/dpetzold/termui"
 )
 
-func NewEventsPanel() *ui.Table {
+func NewEventsPanel(height int) *ui.Table {
 	p := ui.NewTable()
-	p.Height = EVENTS_PANEL_HEIGHT
+	p.Height = height
 	p.BorderLabel = "Events"
 	p.TextAlign = ui.AlignLeft
 	p.Separator = false
 	p.Headers = true
 	p.Analysis()
 	return p
+}
+
+func ShowEvents() {
+	EventsPanel.Height = ui.TermHeight() - 1
+	ui.Body.Rows = []*ui.Row{
+		ui.NewRow(ui.NewCol(12, 0, EventsPanel)),
+		ui.NewRow(ui.NewCol(12, 0, Footer())),
+	}
 }
 
 func updateEvents(eventsPanel *ui.Table) {

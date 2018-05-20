@@ -4,6 +4,7 @@ import (
 	"time"
 
 	ui "github.com/dpetzold/termui"
+	"github.com/sirupsen/logrus"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
@@ -11,10 +12,9 @@ import (
 )
 
 const (
-	NODE_DISPLAY_COUNT     = 3
-	REFRESH_SECONDS        = 3
-	CONTAINER_PANEL_HEIGHT = 30
-	EVENTS_PANEL_HEIGHT    = 20
+	REFRESH_SECONDS     = 3
+	EVENTS_PANEL_HEIGHT = 15
+	NODE_PANEL_HEIGHT   = 9
 )
 
 var (
@@ -25,7 +25,11 @@ var (
 	ContainerPanel *ui.Table
 	EventsPanel    *ui.Table
 	ContainerMaxes map[string]*ContainerMax
+	CpuColumn      []ui.GridBufferer
+	MemoryColumn   []ui.GridBufferer
 )
+
+var log = logrus.New()
 
 type KubeClient struct {
 	clientset      *kubernetes.Clientset

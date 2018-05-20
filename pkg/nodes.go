@@ -8,7 +8,7 @@ import (
 	api_v1 "k8s.io/api/core/v1"
 )
 
-func NewNodePanel() (*ui.List, []ui.GridBufferer, []ui.GridBufferer) {
+func NewNodePanel() *ui.List {
 
 	nodes, err := kubeClient.Nodes()
 	if err != nil {
@@ -31,18 +31,31 @@ func NewNodePanel() (*ui.List, []ui.GridBufferer, []ui.GridBufferer) {
 		capacities = append(capacities, capacity)
 	}
 
-	var cpu_column []ui.GridBufferer
-	var mem_column []ui.GridBufferer
-
 	for _, nd := range NODE_GAUGES {
-		cpu_column = append(cpu_column, nd.CpuGauge)
-		mem_column = append(mem_column, nd.MemoryGauge)
+		CpuColumn = append(CpuColumn, nd.CpuGauge)
+		MemoryColumn = append(MemoryColumn, nd.MemoryGauge)
 	}
 
 	p := ui.NewList()
 	p.Border = false
-	p.Height = len(node_names) * NODE_DISPLAY_COUNT
-	return p, cpu_column, mem_column
+	p.Height = NODE_PANEL_HEIGHT
+	return p
+}
+
+func nodeRow() *ui.Row {
+	return ui.NewRow(
+		ui.NewCol(4, 0, NodePanel),
+		ui.NewCol(4, 0, CpuColumn...),
+		ui.NewCol(4, 0, MemoryColumn...),
+	)
+}
+
+func ShowNodes() {
+	NodePanel.Height = ui.TermHeight() - 1
+	ui.Body.Rows = []*ui.Row{
+		nodeRow(),
+		ui.NewRow(ui.NewCol(12, 0, Footer())),
+	}
 }
 
 func GaugePanel(label string, barColor ui.Attribute) *ui.Gauge {
@@ -63,8 +76,6 @@ func updateNodes(nodePanel *ui.List) error {
 	if err != nil {
 		panic(err.Error())
 	}
-
-	nodes = nodes[0:NODE_DISPLAY_COUNT]
 
 	var node_resources []*NodeResources
 
@@ -102,6 +113,12 @@ func updateNodes(nodePanel *ui.List) error {
 			resources,
 			"",
 		}...)
+	}
+
+	max_rows := nodePanel.Height
+
+	if len(items) > max_rows {
+		items = items[0:max_rows]
 	}
 
 	nodePanel.Items = items

@@ -3,20 +3,45 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	ui "github.com/dpetzold/termui"
 	"github.com/onrik/logrus/filename"
-	"github.com/sirupsen/logrus"
 )
 
 func UpdatePanels() {
 	updateNodes(NodePanel)
 	updateContainers(ContainerPanel)
 	updateEvents(EventsPanel)
+	ui.Body.Align()
+	ui.Render(ui.Body)
 }
 
-var log = logrus.New()
+func Footer() *ui.Par {
+	text := "(D)ashboard    (C)ontainers    (E)vents    (N)odes    (Q)uit"
+	padding := ui.TermWidth()/2 - len(text)/2
+
+	p := ui.NewPar(fmt.Sprintf("%s%s", strings.Repeat(" ", padding), text))
+	p.Border = false
+	p.Height = 1
+	p.TextFgColor = ui.ColorYellow
+	return p
+}
+
+func createTimer(seconds time.Duration) string {
+	refresh_duration := time.Second * seconds
+	timer_path := fmt.Sprintf("/timer/%s", refresh_duration)
+	ui.DefaultEvtStream.Merge("timer", ui.NewTimerCh(refresh_duration))
+	return timer_path
+}
+
+func showWindow(displayFunc func()) {
+	displayFunc()
+	ui.Clear()
+	ui.Body.Align()
+	ui.Render(ui.Body)
+}
 
 func TopRun(k *KubeClient, namespace string) {
 
@@ -39,49 +64,37 @@ func TopRun(k *KubeClient, namespace string) {
 	}
 	defer ui.Close()
 
-	var cpu_column []ui.GridBufferer
-	var mem_column []ui.GridBufferer
-
 	ContainerMaxes = make(map[string]*ContainerMax)
-
-	NodePanel, cpu_column, mem_column = NewNodePanel()
-
+	NodePanel = NewNodePanel()
 	containers_height := ui.TermHeight() - EVENTS_PANEL_HEIGHT - NodePanel.Height
-
-	log.Infof("%d %d %d %d", ui.TermHeight(), EVENTS_PANEL_HEIGHT, NodePanel.Height, containers_height)
-
 	ContainerPanel = NewContainersPanel(containers_height)
-	EventsPanel = NewEventsPanel()
+	EventsPanel = NewEventsPanel(EVENTS_PANEL_HEIGHT)
 
-	ui.Body.AddRows(
-		ui.NewRow(
-			ui.NewCol(4, 0, NodePanel),
-			ui.NewCol(4, 0, cpu_column...),
-			ui.NewCol(4, 0, mem_column...),
-		),
-		ui.NewRow(
-			ui.NewCol(12, 0, ContainerPanel),
-		),
-		ui.NewRow(
-			ui.NewCol(12, 0, EventsPanel),
-		),
-	)
+	showWindow(ShowDashboard)
 
-	ui.Body.Align()
-	ui.Render(ui.Body)
+	ui.Handle("/sys/kbd/c", func(ui.Event) {
+		showWindow(ShowContainers)
+	})
+
+	ui.Handle("/sys/kbd/d", func(ui.Event) {
+		showWindow(ShowDashboard)
+	})
+
+	ui.Handle("/sys/kbd/e", func(ui.Event) {
+		showWindow(ShowEvents)
+	})
+
+	ui.Handle("/sys/kbd/n", func(ui.Event) {
+		showWindow(ShowNodes)
+	})
 
 	ui.Handle("/sys/kbd/q", func(ui.Event) {
 		ui.StopLoop()
 	})
 
-	refresh_duration := time.Second * REFRESH_SECONDS
-	timer_path := fmt.Sprintf("/timer/%s", refresh_duration)
-	ui.DefaultEvtStream.Merge("timer", ui.NewTimerCh(refresh_duration))
-
+	timer_path := createTimer(REFRESH_SECONDS)
 	ui.Handle(timer_path, func(ui.Event) {
 		UpdatePanels()
-		ui.Body.Align()
-		ui.Render(ui.Body)
 	})
 
 	ui.Handle("/sys/wnd/resize", func(e ui.Event) {

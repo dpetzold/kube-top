@@ -2,10 +2,10 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.10
       
     working_directory: /go/src/github.com/dpetzold/kube-top
     steps:
       - checkout
-      - run: make build
+      - run: go get github.com/dpetzold/kube-top
       - run: go test -v ./...

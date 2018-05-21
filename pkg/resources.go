@@ -31,10 +31,6 @@ func (r *MemoryResource) String() string {
 	return humanize.Bytes(uint64(r.Value()))
 }
 
-func (r *MemoryResource) ToQuantity() *resource.Quantity {
-	return resource.NewQuantity(r.Value(), resource.BinarySI)
-}
-
 func NewCpuResource(value int64) *CpuResource {
 	r := resource.NewMilliQuantity(value, resource.DecimalSI)
 	return &CpuResource{r}
@@ -47,8 +43,4 @@ func (r *CpuResource) String() string {
 
 func (r *CpuResource) calcPercentage(divisor *resource.Quantity) int {
 	return calcPercentage(r.MilliValue(), divisor.MilliValue())
-}
-
-func (r *CpuResource) ToQuantity() *resource.Quantity {
-	return resource.NewMilliQuantity(r.MilliValue(), resource.DecimalSI)
 }

@@ -1,2 +1,3 @@
 build
 kube-top
+*.sw*

@@ -80,7 +80,7 @@ func NodeCapacity(node *api_v1.Node) api_v1.ResourceList {
 }
 
 // Return NodeResources struct for the specified object.
-func (k *KubeClient) NodeNodeResources(node *api_v1.Node) (*NodeResources, error) {
+func (k *KubeClient) NodeResources(node *api_v1.Node) (*NodeResources, error) {
 
 	metricsList, err := k.heapsterClient.GetNodeMetrics(node.GetName(), labels.Everything().String())
 	if err != nil {
@@ -100,6 +100,9 @@ func (k *KubeClient) NodeNodeResources(node *api_v1.Node) (*NodeResources, error
 
 	capacity := NodeCapacity(node)
 
+	cpuCapacity := capacity[api_v1.ResourceCPU]
+	memoryCapacity := capacity[api_v1.ResourceMemory]
+
 	cpuQuantity := metrics.Usage[api_v1.ResourceCPU]
 	memoryQuantity := metrics.Usage[api_v1.ResourceMemory]
 
@@ -107,17 +110,21 @@ func (k *KubeClient) NodeNodeResources(node *api_v1.Node) (*NodeResources, error
 	memoryUsage := NewMemoryResource(memoryQuantity.Value())
 
 	return &NodeResources{
-		Name:          node.GetName(),
-		Pods:          len(pods),
-		CpuUsage:      NewCpuResource(cpuQuantity.MilliValue()),
-		PercentCpu:    cpuUsage.calcPercentage(capacity.Cpu()),
-		MemoryUsage:   NewMemoryResource(memoryQuantity.Value()),
-		PercentMemory: memoryUsage.calcPercentage(capacity.Memory()),
+		Name: node.GetName(),
+		Pods: len(pods),
+
+		CpuUsage:    NewCpuResource(cpuQuantity.MilliValue()),
+		CpuCapacity: NewCpuResource(cpuCapacity.MilliValue()),
+		PercentCpu:  cpuUsage.calcPercentage(capacity.Cpu()),
+
+		MemoryUsage:    NewMemoryResource(memoryQuantity.Value()),
+		MemoryCapacity: NewMemoryResource(memoryCapacity.Value()),
+		PercentMemory:  memoryUsage.calcPercentage(capacity.Memory()),
 	}, nil
 }
 
 // Returns the resource usage of the pods in the specified namespace.
-func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*NodeResources, error) {
+func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*ContainerUsage, error) {
 
 	allNamespaces := false
 	if namespace == "" {
@@ -129,7 +136,7 @@ func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*NodeR
 		return nil, err
 	}
 
-	pods := make(map[string]*NodeResources)
+	usage := make(map[string]*ContainerUsage)
 
 	for _, item := range metricsList.Items {
 
@@ -139,7 +146,7 @@ func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*NodeR
 			memoryQuantity := metrics.Usage[api_v1.ResourceMemory]
 			name := fmt.Sprintf("%s/%s", item.ObjectMeta.Name, metrics.Name)
 
-			pods[name] = &NodeResources{
+			usage[name] = &ContainerUsage{
 				Name:        name,
 				CpuUsage:    NewCpuResource(cpuQuantity.MilliValue()),
 				MemoryUsage: NewMemoryResource(memoryQuantity.Value()),
@@ -148,7 +155,7 @@ func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*NodeR
 
 	}
 
-	return pods, nil
+	return usage, nil
 }
 
 func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
@@ -185,7 +192,7 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 			Status:   status,
 			Ready:    ready,
 			Restarts: restarts,
-			Age:      timeToDurationStr(pod.CreationTimestamp.Time),
+			Age:      pod.CreationTimestamp.Time,
 		}
 	}
 
@@ -210,15 +217,20 @@ func (k *KubeClient) Containers(namespace string) ([]*ContainerInfo, error) {
 		containers := evaluatePod(&pod)
 
 		for container, status := range containers {
-
 			name := fmt.Sprintf("%s/%s", pod.GetName(), container)
-
 			resources := resource_map[name]
-
 			rows = append(rows, &ContainerInfo{
-				Name:      name,
-				Status:    status,
-				Resources: resources,
+				Name: name,
+				ContainerUsage: &ContainerUsage{
+					CpuUsage:    resources.CpuUsage,
+					MemoryUsage: resources.MemoryUsage,
+				},
+				ContainerStatus: &ContainerStatus{
+					Status:   status.Status,
+					Ready:    status.Ready,
+					Restarts: status.Restarts,
+					Age:      status.Age,
+				},
 			})
 		}
 	}
@@ -322,7 +334,7 @@ func (k *KubeClient) ClusterCapacity() (capacity api_v1.ResourceList, err error)
 	return capacity, nil
 }
 
-// Returns events from the specified namespace
+// Returns events from the specified namespace sorted by timestamp
 func (k *KubeClient) Events(namespace string) ([]api_v1.Event, error) {
 
 	eventList, err := k.clientset.Core().Events(namespace).List(metav1.ListOptions{})

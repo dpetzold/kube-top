@@ -2,40 +2,13 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	ui "github.com/dpetzold/termui"
-	api_v1 "k8s.io/api/core/v1"
 )
 
 func NewNodePanel() *ui.List {
-
-	nodes, err := kubeClient.Nodes()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	NODE_GAUGES = make(map[string]*NodeGauges)
-	var node_names []string
-	var capacities []api_v1.ResourceList
-
-	for _, node := range nodes {
-		name := node.GetName()
-		capacity := NodeCapacity(&node)
-		NODE_GAUGES[name] = &NodeGauges{
-			Node:        node,
-			CpuGauge:    GaugePanel("Cpu", ui.ColorRed),
-			MemoryGauge: GaugePanel("Mem", ui.ColorCyan),
-		}
-		node_names = append(node_names, name)
-		capacities = append(capacities, capacity)
-	}
-
-	for _, nd := range NODE_GAUGES {
-		CpuColumn = append(CpuColumn, nd.CpuGauge)
-		MemoryColumn = append(MemoryColumn, nd.MemoryGauge)
-	}
-
 	p := ui.NewList()
 	p.Border = false
 	p.Height = NODE_PANEL_HEIGHT
@@ -43,19 +16,27 @@ func NewNodePanel() *ui.List {
 }
 
 func nodeRow() *ui.Row {
+	log.Infof("%v %v", len(Globals.CpuColumn), len(Globals.MemoryColumn))
 	return ui.NewRow(
-		ui.NewCol(4, 0, NodePanel),
-		ui.NewCol(4, 0, CpuColumn...),
-		ui.NewCol(4, 0, MemoryColumn...),
+		ui.NewCol(4, 0, Globals.NodePanel),
+		ui.NewCol(4, 0, Globals.CpuColumn...),
+		ui.NewCol(4, 0, Globals.MemoryColumn...),
 	)
 }
 
-func ShowNodes() {
-	NodePanel.Height = ui.TermHeight() - 1
+func NodesFooter() *ui.Par {
+	return DashboardFooter()
+}
+
+func ShowNodeWindow() {
+	Globals.NodePanel.Height = ui.TermHeight() - 1
 	ui.Body.Rows = []*ui.Row{
 		nodeRow(),
-		ui.NewRow(ui.NewCol(12, 0, Footer())),
+		ui.NewRow(
+			ui.NewCol(12, 0, NodesFooter()),
+		),
 	}
+	Globals.ActiveWindow = NodesWindow
 }
 
 func GaugePanel(label string, barColor ui.Attribute) *ui.Gauge {
@@ -72,47 +53,48 @@ func GaugePanel(label string, barColor ui.Attribute) *ui.Gauge {
 
 func updateNodes(nodePanel *ui.List) error {
 
-	nodes, err := kubeClient.Nodes()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	var node_resources []*NodeResources
-
-	for _, node := range nodes {
-		name := node.GetName()
-		capacity := NodeCapacity(&node)
-
-		pods, err := kubeClient.ActivePods("", name)
-		if err != nil {
-			return err
-		}
-
-		cpuQuantity := capacity[api_v1.ResourceCPU]
-		memQuantity := capacity[api_v1.ResourceMemory]
-
-		node_resources = append(node_resources, &NodeResources{
-			Name:           name,
-			Pods:           len(pods),
-			CpuCapacity:    NewCpuResource(cpuQuantity.MilliValue()),
-			MemoryCapacity: NewMemoryResource(memQuantity.Value()),
-		})
-	}
-
 	var items []string
+
 	resource_fmt := "%s[%s:](fg-cyan) [%s](fg-cyan,fg-bold)%s"
+	gauge_fmt := "%d%% (%s)"
 
-	for _, n := range node_resources {
+	Globals.CpuColumn = nil
+	Globals.MemoryColumn = nil
 
-		resources := fmt.Sprintf(resource_fmt, "  ", "Cpu", n.CpuCapacity.String(), "  ")
-		resources += fmt.Sprintf(resource_fmt, "", "Mem", n.MemoryCapacity.String(), "  ")
-		resources += fmt.Sprintf(resource_fmt, "", "Pods", strconv.FormatInt(int64(n.Pods), 10), "")
+	nodeResources := Globals.NodeResources
+
+	sort.Slice(nodeResources, func(i, j int) bool {
+		return cmp_struct(nodeResources, "CpuUsage", i, j, false)
+	})
+
+	for _, r := range nodeResources {
+
+		cpuGauge := GaugePanel("Cpu", ui.ColorRed)
+		memoryGauge := GaugePanel("Mem", ui.ColorCyan)
+
+		resources := fmt.Sprintf(resource_fmt, "  ", "Cpu", r.CpuCapacity.String(), "  ")
+		resources += fmt.Sprintf(resource_fmt, "", "Mem", r.MemoryCapacity.String(), "  ")
+		resources += fmt.Sprintf(resource_fmt, "", "Pods", strconv.FormatInt(int64(r.Pods), 10), "")
+
+		Globals.CpuColumn = append(Globals.CpuColumn, cpuGauge)
+		Globals.MemoryColumn = append(Globals.MemoryColumn, memoryGauge)
+
+		memoryGauge.Percent = r.PercentMemory
+		memoryGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentMemory, r.MemoryUsage.String())
+
+		cpuGauge.Percent = r.PercentCpu
+		cpuGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentCpu, r.CpuUsage.String())
 
 		items = append(items, []string{
-			fmt.Sprintf(" [%s](fg-white,fg-bold)", n.Name),
+			fmt.Sprintf(" [%s](fg-white,fg-bold)", r.Name),
 			resources,
 			"",
 		}...)
+	}
+
+	// XXX: Move this out
+	if Globals.ActiveWindow == DashboardWindow || Globals.ActiveWindow == NodesWindow {
+		ui.Body.Rows[0] = nodeRow()
 	}
 
 	max_rows := nodePanel.Height
@@ -122,18 +104,6 @@ func updateNodes(nodePanel *ui.List) error {
 	}
 
 	nodePanel.Items = items
-
-	for _, nd := range NODE_GAUGES {
-		r, err := kubeClient.NodeNodeResources(&nd.Node)
-		if err != nil {
-			return err
-		}
-
-		nd.MemoryGauge.Percent = r.PercentMemory
-		nd.MemoryGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentMemory, r.MemoryUsage.String())
-		nd.CpuGauge.Percent = r.PercentCpu
-		nd.CpuGauge.Label = fmt.Sprintf("%d%% (%s)", r.PercentCpu, r.CpuUsage.String())
-	}
 
 	return nil
 }

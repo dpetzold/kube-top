@@ -17,12 +17,17 @@ func NewEventsPanel(height int) *ui.Table {
 	return p
 }
 
+func EventsFooter() *ui.Par {
+	return DashboardFooter()
+}
+
 func ShowEvents() {
-	EventsPanel.Height = ui.TermHeight() - 1
+	Globals.EventsPanel.Height = ui.TermHeight() - 1
 	ui.Body.Rows = []*ui.Row{
-		ui.NewRow(ui.NewCol(12, 0, EventsPanel)),
-		ui.NewRow(ui.NewCol(12, 0, Footer())),
+		ui.NewRow(ui.NewCol(12, 0, Globals.EventsPanel)),
+		ui.NewRow(ui.NewCol(12, 0, EventsFooter())),
 	}
+	Globals.ActiveWindow = "EventsWindow"
 }
 
 func updateEvents(eventsPanel *ui.Table) {
@@ -30,10 +35,7 @@ func updateEvents(eventsPanel *ui.Table) {
 		[]string{"Last Seen", "Count", "Name", "Kind", "Type", "Reason", "Message"},
 	}
 
-	events, err := kubeClient.Events(Namespace)
-	if err != nil {
-		panic(err.Error())
-	}
+	events := Globals.Events
 
 	for _, e := range events {
 		eventRows = append(eventRows, []string{
@@ -47,7 +49,7 @@ func updateEvents(eventsPanel *ui.Table) {
 		})
 	}
 
-	max_rows := EVENTS_PANEL_HEIGHT - 2
+	max_rows := EVENTS_PANEL_HEIGHT - 3
 	if len(eventRows) > max_rows {
 		eventRows = eventRows[0:max_rows]
 	}

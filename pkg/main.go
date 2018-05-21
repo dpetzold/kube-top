@@ -37,7 +37,7 @@ func main() {
 
 	flag.Parse()
 
-	Namespace = *namespace
+	Globals.Namespace = *namespace
 
 	filenameHook := filename.NewHook()
 	filenameHook.Field = "source"
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	heapsterClient := metricsutil.DefaultHeapsterMetricsClient(clientset.Core())
-	kubeClient = NewKubeClient(clientset, heapsterClient)
+	Globals.KubeClient = NewKubeClient(clientset, heapsterClient)
 
 	KubeTop()
 }

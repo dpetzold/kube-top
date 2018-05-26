@@ -20,15 +20,12 @@ import (
 
 	"github.com/maruel/panicparse/stack"
 	tm "github.com/nsf/termbox-go"
-	"github.com/sirupsen/logrus"
 )
 
 // Bufferer should be implemented by all renderable components.
 type Bufferer interface {
 	Buffer() Buffer
 }
-
-var log = logrus.New()
 
 // Init initializes termui library. This function should be called before any others.
 // After initialization, the library must be finalized by 'Close' function.

@@ -1,5 +1,5 @@
-hash: d8a8f48875b80578d02de851a52ffdc681a2e2888739d804e43558b7e1d0bcf6
-updated: 2018-05-26T16:21:59.757976775-07:00
+hash: de9e37972ec6b920c5d4ac2902262387dbf0a9350935a3b7e753dcd1782c16e5
+updated: 2018-05-26T16:34:52.557137447-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -16,7 +16,7 @@ imports:
   - digestset
   - reference
 - name: github.com/dpetzold/termui
-  version: 0abe6cebb09ae51edb2bb9dac7a8b69609ecd1a6
+  version: 260fc598c2d4d483452cc4a2af2b445838f8a296
 - name: github.com/dustin/go-humanize
   version: 02af3965c54e8cacf948b97fef38925c4120652c
 - name: github.com/ghodss/yaml

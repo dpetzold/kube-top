@@ -1,5 +1,5 @@
-hash: 423d18b82f8e06c79d0e50e7a83f952c5b92f85ff0927e8178f9a1831124ea65
-updated: 2018-05-19T15:14:29.367310063-07:00
+hash: d8a8f48875b80578d02de851a52ffdc681a2e2888739d804e43558b7e1d0bcf6
+updated: 2018-05-26T16:21:59.757976775-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -16,7 +16,7 @@ imports:
   - digestset
   - reference
 - name: github.com/dpetzold/termui
-  version: 93bef5915f19aa71bff8bdded7f751c0f8210215
+  version: 0abe6cebb09ae51edb2bb9dac7a8b69609ecd1a6
 - name: github.com/dustin/go-humanize
   version: 02af3965c54e8cacf948b97fef38925c4120652c
 - name: github.com/ghodss/yaml
@@ -61,13 +61,13 @@ imports:
 - name: github.com/nsf/termbox-go
   version: 21a4d435a86280a2927985fd6296de56cbce453e
 - name: github.com/onrik/logrus
-  version: 6a64e23a4923a8d0d4db2806dcf3e55af1e48f61
+  version: 9db917e87735094e75f37662738b3bebb96eedaa
   subpackages:
   - filename
 - name: github.com/opencontainers/go-digest
   version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
 - name: github.com/sirupsen/logrus
-  version: 0dad3b6953e73d351ec8ebfd8a8c6b088d320381
+  version: ea8897e79973357ba785ac2533559a6297e83c44
 - name: github.com/spf13/pflag
   version: 4c012f6dcd9546820e378d0bdda4d8fc772cdfea
 - name: golang.org/x/crypto
@@ -107,7 +107,7 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/appengine
-  version: b9aad5d628b283f265adf8d3557faae187a8d015
+  version: b1f26356af11148e710935ed1ac8a7f5702c7612
   subpackages:
   - internal
   - internal/app_identity

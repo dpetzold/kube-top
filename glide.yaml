@@ -6,7 +6,7 @@ import:
 - package: github.com/dustin/go-humanize
 
 - package: github.com/dpetzold/termui
-  version: 93bef5915f19aa71bff8bdded7f751c0f8210215
+  version: 0abe6cebb09ae51edb2bb9dac7a8b69609ecd1a6
 
 - package: k8s.io/apiserver
   version: kubernetes-1.10.0

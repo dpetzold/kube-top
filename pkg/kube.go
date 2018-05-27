@@ -219,12 +219,24 @@ func (k *KubeClient) Containers(namespace string) ([]*ContainerInfo, error) {
 		for container, status := range containers {
 			name := fmt.Sprintf("%s/%s", pod.GetName(), container)
 			resources := resource_map[name]
-			rows = append(rows, &ContainerInfo{
-				Name: name,
-				ContainerUsage: &ContainerUsage{
+
+			var containerUsage *ContainerUsage
+
+			if resources != nil {
+				containerUsage = &ContainerUsage{
 					CpuUsage:    resources.CpuUsage,
 					MemoryUsage: resources.MemoryUsage,
-				},
+				}
+			} else {
+				containerUsage = &ContainerUsage{
+					CpuUsage:    NewCpuResource(0),
+					MemoryUsage: NewMemoryResource(0),
+				}
+			}
+
+			rows = append(rows, &ContainerInfo{
+				Name:           name,
+				ContainerUsage: containerUsage,
 				ContainerStatus: &ContainerStatus{
 					Status:   status.Status,
 					Ready:    status.Ready,

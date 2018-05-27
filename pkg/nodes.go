@@ -16,7 +16,6 @@ func NewNodePanel() *ui.List {
 }
 
 func nodeRow() *ui.Row {
-	log.Infof("%v %v", len(Globals.CpuColumn), len(Globals.MemoryColumn))
 	return ui.NewRow(
 		ui.NewCol(4, 0, Globals.NodePanel),
 		ui.NewCol(4, 0, Globals.CpuColumn...),
@@ -67,6 +66,11 @@ func updateNodes(nodePanel *ui.List) error {
 		return cmp_struct(nodeResources, "CpuUsage", i, j, false)
 	})
 
+	columnMax := 3
+	if Globals.ActiveWindow == NodesWindow {
+		columnMax = 10
+	}
+
 	for _, r := range nodeResources {
 
 		cpuGauge := GaugePanel("Cpu", ui.ColorRed)
@@ -76,20 +80,22 @@ func updateNodes(nodePanel *ui.List) error {
 		resources += fmt.Sprintf(resource_fmt, "", "Mem", r.MemoryCapacity.String(), "  ")
 		resources += fmt.Sprintf(resource_fmt, "", "Pods", strconv.FormatInt(int64(r.Pods), 10), "")
 
-		Globals.CpuColumn = append(Globals.CpuColumn, cpuGauge)
-		Globals.MemoryColumn = append(Globals.MemoryColumn, memoryGauge)
+		items = append(items, []string{
+			fmt.Sprintf(" [%s](fg-white,fg-bold)", r.Name),
+			resources,
+			"",
+		}...)
+
+		if len(Globals.CpuColumn) < columnMax {
+			Globals.CpuColumn = append(Globals.CpuColumn, cpuGauge)
+			Globals.MemoryColumn = append(Globals.MemoryColumn, memoryGauge)
+		}
 
 		memoryGauge.Percent = r.PercentMemory
 		memoryGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentMemory, r.MemoryUsage.String())
 
 		cpuGauge.Percent = r.PercentCpu
 		cpuGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentCpu, r.CpuUsage.String())
-
-		items = append(items, []string{
-			fmt.Sprintf(" [%s](fg-white,fg-bold)", r.Name),
-			resources,
-			"",
-		}...)
 	}
 
 	// XXX: Move this out
@@ -97,7 +103,9 @@ func updateNodes(nodePanel *ui.List) error {
 		ui.Body.Rows[0] = nodeRow()
 	}
 
-	max_rows := nodePanel.Height
+	max_rows := columnMax * 3
+
+	log.Infof("%v %v %v", len(nodeResources), len(items), max_rows)
 
 	if len(items) > max_rows {
 		items = items[0:max_rows]

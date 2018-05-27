@@ -26,7 +26,8 @@ func NewKubeClient(
 // Return all active pods in the specified namespace. Can also limit to a node if specified.
 func (k *KubeClient) ActivePods(namespace, nodeName string) ([]api_v1.Pod, error) {
 
-	selector := fmt.Sprintf("status.phase!=%s,status.phase!=%s", string(api_v1.PodSucceeded), string(api_v1.PodFailed))
+	// selector := fmt.Sprintf("status.phase!=%s,status.phase!=%s", string(api_v1.PodSucceeded), string(api_v1.PodFailed))
+	selector := fmt.Sprintf("status.phase!=%s", string(api_v1.PodSucceeded))
 	if nodeName != "" {
 		selector += fmt.Sprintf(",spec.nodeName=%s", nodeName)
 	}

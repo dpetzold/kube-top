@@ -68,7 +68,7 @@ func UpdateResources() {
 	}
 	Globals.Nodes = nodes
 
-	Globals.NodeResources = nil
+	var nodeResources []*NodeResources
 	for _, node := range nodes {
 
 		resources, err := Globals.KubeClient.NodeResources(&node)
@@ -76,8 +76,10 @@ func UpdateResources() {
 			panic(err.Error())
 		}
 
-		Globals.NodeResources = append(Globals.NodeResources, resources)
+		nodeResources = append(nodeResources, resources)
 	}
+
+	Globals.NodeResources = nodeResources
 }
 
 func UpdatePanels() {
@@ -109,6 +111,7 @@ func createTimer(seconds time.Duration) string {
 
 func showWindow(displayFunc func()) {
 	displayFunc()
+	UpdatePanels()
 	ui.Clear()
 	ui.Body.Align()
 	ui.Render(ui.Body)
@@ -120,8 +123,8 @@ func ContainersHandler(e ui.EvtKbd) {
 		"a": "Age",
 		"e": "MemoryUsage",
 		"E": "MemoryMax",
-		"u": "CpuUsage",
-		"U": "CpuMax",
+		"c": "CpuUsage",
+		"C": "CpuMax",
 		"p": "Name",
 	}
 
@@ -191,8 +194,10 @@ func KubeTop() {
 
 	timer_path := createTimer(REFRESH_SECONDS)
 	ui.Handle(timer_path, func(ui.Event) {
-		UpdateResources()
-		UpdatePanels()
+		go func() {
+			UpdateResources()
+			UpdatePanels()
+		}()
 	})
 
 	ui.Handle("/sys/wnd/resize", func(e ui.Event) {

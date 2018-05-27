@@ -49,7 +49,7 @@ func updateEvents(eventsPanel *ui.Table) {
 		})
 	}
 
-	max_rows := EVENTS_PANEL_HEIGHT - 3
+	max_rows := Globals.EventsPanel.Height - 3
 	if len(eventRows) > max_rows {
 		eventRows = eventRows[0:max_rows]
 	}

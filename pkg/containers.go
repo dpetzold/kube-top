@@ -21,12 +21,12 @@ func NewContainersPanel(height int) *ui.Table {
 
 func ContainerFooter() *ui.Par {
 	text := strings.Join([]string{
-		"Sort:",
 		"p:Pod/Container",
 		"c:Cpu",
 		"C:CpuMax",
 		"e:Memory",
 		"E:MemoryMax",
+		"s:Status",
 		"a:Age",
 		"b:back",
 	}, " ")

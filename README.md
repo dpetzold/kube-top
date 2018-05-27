@@ -10,5 +10,5 @@ Aggregates and provides visual representation of the following kubectl commands:
 * `kubectl get pods`
 * `kubectl get events`
 
-<img src="./_img/kube-top.png" width="80%">
+<img src="./_img/demo.gif" width="80%">
 

@@ -92,7 +92,7 @@ func (k *KubeClient) NodeResources(node *api_v1.Node) (*NodeResources, error) {
 		return nil, fmt.Errorf("Got bad number of results from client.GetNodeMetrics")
 	}
 
-	pods, err := k.ActivePods("", node.GetName())
+	pods, err := k.ActivePods(Globals.Namespace, node.GetName())
 	if err != nil {
 		return nil, err
 	}

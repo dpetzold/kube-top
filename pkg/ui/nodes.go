@@ -5,22 +5,21 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/termui"
 )
 
 func NewNodePanel() *termui.List {
 	p := termui.NewList()
 	p.Border = false
-	p.Height = global.NODE_PANEL_HEIGHT
+	p.Height = NODE_PANEL_HEIGHT
 	return p
 }
 
 func nodeRow() *termui.Row {
 	return termui.NewRow(
-		termui.NewCol(4, 0, global.NodePanel),
-		termui.NewCol(4, 0, global.CpuColumn...),
-		termui.NewCol(4, 0, global.MemoryColumn...),
+		termui.NewCol(4, 0, NodePanel),
+		termui.NewCol(4, 0, CpuColumn...),
+		termui.NewCol(4, 0, MemoryColumn...),
 	)
 }
 
@@ -29,14 +28,14 @@ func NodesFooter() *termui.Par {
 }
 
 func ShowNodeWindow() {
-	global.NodePanel.Height = termui.TermHeight() - 1
+	NodePanel.Height = termui.TermHeight() - 1
 	termui.Body.Rows = []*termui.Row{
 		nodeRow(),
 		termui.NewRow(
 			termui.NewCol(12, 0, NodesFooter()),
 		),
 	}
-	global.ActiveWindow = global.NodesWindow
+	ActiveWindow = NodesWindow
 }
 
 func GaugePanel(label string, barColor termui.Attribute) *termui.Gauge {
@@ -58,17 +57,17 @@ func updateNodes(nodePanel *termui.List) error {
 	resource_fmt := "%s[%s:](fg-cyan) [%s](fg-cyan,fg-bold)%s"
 	gauge_fmt := "%d%% (%s)"
 
-	global.CpuColumn = nil
-	global.MemoryColumn = nil
+	CpuColumn = nil
+	MemoryColumn = nil
 
-	nodeResources := global.NodeResources
+	nodeResources := NodeResources
 
 	sort.Slice(nodeResources, func(i, j int) bool {
 		return CompareStruct(nodeResources, "CpuUsage", i, j, false)
 	})
 
 	columnMax := 3
-	if global.ActiveWindow == global.NodesWindow {
+	if ActiveWindow == NodesWindow {
 		columnMax = 10
 	}
 
@@ -87,9 +86,9 @@ func updateNodes(nodePanel *termui.List) error {
 			"",
 		}...)
 
-		if len(global.CpuColumn) < columnMax {
-			global.CpuColumn = append(global.CpuColumn, cpuGauge)
-			global.MemoryColumn = append(global.MemoryColumn, memoryGauge)
+		if len(CpuColumn) < columnMax {
+			CpuColumn = append(CpuColumn, cpuGauge)
+			MemoryColumn = append(MemoryColumn, memoryGauge)
 		}
 
 		memoryGauge.Percent = r.PercentMemory
@@ -100,7 +99,7 @@ func updateNodes(nodePanel *termui.List) error {
 	}
 
 	// XXX: Move this out
-	if global.ActiveWindow == global.DashboardWindow || global.ActiveWindow == global.NodesWindow {
+	if ActiveWindow == DashboardWindow || ActiveWindow == NodesWindow {
 		termui.Body.Rows[0] = nodeRow()
 	}
 

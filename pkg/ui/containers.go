@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/termui"
 )
 
@@ -35,20 +34,20 @@ func ContainerFooter() *termui.Par {
 }
 
 func ShowContainers() {
-	global.ContainerPanel.Height = termui.TermHeight() - 1
+	ContainerPanel.Height = termui.TermHeight() - 1
 	termui.Body.Rows = []*termui.Row{
-		termui.NewRow(termui.NewCol(12, 0, global.ContainerPanel)),
+		termui.NewRow(termui.NewCol(12, 0, ContainerPanel)),
 		termui.NewRow(termui.NewCol(12, 0, ContainerFooter())),
 	}
-	global.ActiveWindow = global.ContainersWindow
+	ActiveWindow = ContainersWindow
 }
 
 func updateContainers(containersPanel *termui.Table) {
 
-	containers := global.Containers
+	containers := Containers
 
 	sort.Slice(containers, func(i, j int) bool {
-		return CompareStruct(containers, global.SortField, i, j, global.SortOrder)
+		return CompareStruct(containers, SortField, i, j, SortOrder)
 	})
 
 	rows := [][]string{
@@ -84,7 +83,7 @@ func updateContainers(containersPanel *termui.Table) {
 		})
 	}
 
-	max_rows := global.ContainerPanel.Height - 3
+	max_rows := ContainerPanel.Height - 3
 	if len(rows) > max_rows {
 		rows = rows[0:max_rows]
 	}

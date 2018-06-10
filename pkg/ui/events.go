@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/termui"
 )
 
@@ -23,12 +22,12 @@ func EventsFooter() *termui.Par {
 }
 
 func ShowEvents() {
-	global.EventsPanel.Height = termui.TermHeight() - 1
+	EventsPanel.Height = termui.TermHeight() - 1
 	termui.Body.Rows = []*termui.Row{
-		termui.NewRow(termui.NewCol(12, 0, global.EventsPanel)),
+		termui.NewRow(termui.NewCol(12, 0, EventsPanel)),
 		termui.NewRow(termui.NewCol(12, 0, EventsFooter())),
 	}
-	global.ActiveWindow = "EventsWindow"
+	ActiveWindow = "EventsWindow"
 }
 
 func updateEvents(eventsPanel *termui.Table) {
@@ -36,7 +35,7 @@ func updateEvents(eventsPanel *termui.Table) {
 		[]string{"Last Seen", "Count", "Name", "Kind", "Type", "Reason", "Message"},
 	}
 
-	events := global.Events
+	events := Events
 
 	for _, e := range events {
 		eventRows = append(eventRows, []string{
@@ -50,7 +49,7 @@ func updateEvents(eventsPanel *termui.Table) {
 		})
 	}
 
-	max_rows := global.EventsPanel.Height - 3
+	max_rows := EventsPanel.Height - 3
 	if len(eventRows) > max_rows {
 		eventRows = eventRows[0:max_rows]
 	}

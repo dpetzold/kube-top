@@ -1,4 +1,4 @@
-package global
+package ui
 
 import (
 	"github.com/dpetzold/kube-top/pkg/kube"
@@ -27,7 +27,7 @@ var (
 	CpuColumn      []termui.GridBufferer
 	Events         []api_v1.Event
 	EventsPanel    *termui.Table
-	KubeClient     *kube.KubeClientType
+	KubeClient     *kube.KubeClient
 	MemoryColumn   []termui.GridBufferer
 	Namespace      string
 	NodePanel      *termui.List

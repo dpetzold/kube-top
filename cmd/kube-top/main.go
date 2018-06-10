@@ -7,14 +7,12 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/kube-top/pkg/kube"
 	"github.com/dpetzold/kube-top/pkg/ui"
 
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubernetes/pkg/kubectl/metricsutil"
 )
 
 func homeDir() string {
@@ -42,8 +40,6 @@ func main() {
 
 	flag.Parse()
 
-	global.Namespace = *namespace
-
 	/*
 		filenameHook := filename.NewHook()
 		filenameHook.Field = "source"
@@ -67,8 +63,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	heapsterClient := metricsutil.DefaultHeapsterMetricsClient(clientset.Core())
-	global.KubeClient = kube.NewKubeClient(clientset, heapsterClient)
-
-	ui.KubeTop()
+	ui.KubeTop(
+		kube.NewKubeClient(clientset),
+		*namespace,
+	)
 }

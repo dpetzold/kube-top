@@ -5,30 +5,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/kube-top/pkg/kube"
 	"github.com/dpetzold/termui"
 )
 
-func Init() {
-	global.SortField = "CpuUsage"
-	global.NodePanel = NewNodePanel()
-	global.ContainerMaxes = make(map[string]*kube.ContainerMaxes)
-	containers_height := termui.TermHeight() - global.EVENTS_PANEL_HEIGHT - global.NodePanel.Height
-	global.ContainerPanel = NewContainersPanel(containers_height)
-	global.EventsPanel = NewEventsPanel(global.EVENTS_PANEL_HEIGHT)
-}
-
 func UpdateResources() {
 
-	containers, err := global.KubeClient.Containers(global.Namespace)
+	containers, err := KubeClient.Containers(Namespace)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	for _, c := range containers {
 
-		if m, ok := global.ContainerMaxes[c.Name]; ok {
+		if m, ok := ContainerMaxes[c.Name]; ok {
 			if m.CpuMax.Quantity.Cmp(*c.CpuUsage.Quantity) < 0 {
 				m.CpuMax = c.CpuUsage
 				m.CpuMaxTime = time.Now()
@@ -39,7 +29,7 @@ func UpdateResources() {
 				m.MemoryMaxTime = time.Now()
 			}
 		} else {
-			global.ContainerMaxes[c.Name] = &kube.ContainerMaxes{
+			ContainerMaxes[c.Name] = &kube.ContainerMaxes{
 				CpuMax:        c.CpuUsage,
 				CpuMaxTime:    time.Now(),
 				MemoryMax:     c.MemoryUsage,
@@ -47,7 +37,7 @@ func UpdateResources() {
 			}
 		}
 
-		maxes := global.ContainerMaxes[c.Name]
+		maxes := ContainerMaxes[c.Name]
 
 		c.CpuMax = maxes.CpuMax
 		c.CpuMaxTime = maxes.CpuMaxTime
@@ -55,24 +45,24 @@ func UpdateResources() {
 		c.MemoryMaxTime = maxes.MemoryMaxTime
 
 	}
-	global.Containers = containers
+	Containers = containers
 
-	events, err := global.KubeClient.Events(global.Namespace)
+	events, err := KubeClient.Events(Namespace)
 	if err != nil {
 		panic(err.Error())
 	}
-	global.Events = events
+	Events = events
 
-	nodes, err := global.KubeClient.Nodes()
+	nodes, err := KubeClient.Nodes()
 	if err != nil {
 		panic(err.Error())
 	}
-	global.Nodes = nodes
+	Nodes = nodes
 
 	var nodeResources []*kube.NodeResources
 	for _, node := range nodes {
 
-		resources, err := global.KubeClient.NodeResources(&node, global.Namespace)
+		resources, err := KubeClient.NodeResources(&node, Namespace)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -80,13 +70,13 @@ func UpdateResources() {
 		nodeResources = append(nodeResources, resources)
 	}
 
-	global.NodeResources = nodeResources
+	NodeResources = nodeResources
 }
 
 func UpdatePanels() {
-	updateNodes(global.NodePanel)
-	updateContainers(global.ContainerPanel)
-	updateEvents(global.EventsPanel)
+	updateNodes(NodePanel)
+	updateContainers(ContainerPanel)
+	updateEvents(EventsPanel)
 	termui.Body.Align()
 	termui.Render(termui.Body)
 }
@@ -136,10 +126,10 @@ func ContainersHandler(e termui.EvtKbd) {
 		return
 	} else {
 		if field, ok := ContainerKeyMapping[key]; ok {
-			if global.SortField == field {
-				global.SortOrder = !global.SortOrder
+			if SortField == field {
+				SortOrder = !SortOrder
 			} else {
-				global.SortField = field
+				SortField = field
 			}
 		}
 	}
@@ -169,22 +159,28 @@ func DefaultHandler(e termui.Event) {
 
 	k := e.Data.(termui.EvtKbd)
 
-	switch global.ActiveWindow {
-	case global.ContainersWindow:
+	switch ActiveWindow {
+	case ContainersWindow:
 		ContainersHandler(k)
 	default:
 		DashboardHandler(k)
 	}
 }
 
-func KubeTop() {
+func KubeTop(kubeClient *kube.KubeClient, namespace string) {
 
 	if err := termui.Init(); err != nil {
 		panic(err)
 	}
 	defer termui.Close()
 
-	Init()
+	SortField = "CpuUsage"
+	NodePanel = NewNodePanel()
+	ContainerMaxes = make(map[string]*kube.ContainerMaxes)
+	containers_height := termui.TermHeight() - EVENTS_PANEL_HEIGHT - NodePanel.Height
+	ContainerPanel = NewContainersPanel(containers_height)
+	EventsPanel = NewEventsPanel(EVENTS_PANEL_HEIGHT)
+	Namespace = namespace
 
 	showWindow(ShowDashboard)
 
@@ -192,7 +188,7 @@ func KubeTop() {
 		termui.StopLoop()
 	})
 
-	timer_path := createTimer(global.REFRESH_SECONDS)
+	timer_path := createTimer(REFRESH_SECONDS)
 	termui.Handle(timer_path, func(termui.Event) {
 		go func() {
 			UpdateResources()

@@ -3,7 +3,6 @@ package ui
 import (
 	"strings"
 
-	"github.com/dpetzold/kube-top/pkg/global"
 	"github.com/dpetzold/termui"
 )
 
@@ -22,18 +21,18 @@ func DashboardFooter() *termui.Par {
 
 func ShowDashboard() {
 
-	global.NodePanel.Height = global.NODE_PANEL_HEIGHT
-	global.EventsPanel.Height = global.EVENTS_PANEL_HEIGHT
-	global.ContainerPanel.Height = termui.TermHeight() - global.EVENTS_PANEL_HEIGHT - global.NODE_PANEL_HEIGHT - 1
-	global.ActiveWindow = global.DashboardWindow
+	NodePanel.Height = NODE_PANEL_HEIGHT
+	EventsPanel.Height = EVENTS_PANEL_HEIGHT
+	ContainerPanel.Height = termui.TermHeight() - EVENTS_PANEL_HEIGHT - NODE_PANEL_HEIGHT - 1
+	ActiveWindow = DashboardWindow
 
 	termui.Body.Rows = []*termui.Row{
 		nodeRow(),
 		termui.NewRow(
-			termui.NewCol(12, 0, global.ContainerPanel),
+			termui.NewCol(12, 0, ContainerPanel),
 		),
 		termui.NewRow(
-			termui.NewCol(12, 0, global.EventsPanel),
+			termui.NewCol(12, 0, EventsPanel),
 		),
 		termui.NewRow(
 			termui.NewCol(12, 0, DashboardFooter()),

@@ -13,23 +13,17 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-type KubeClientType struct {
-	clientset      *kubernetes.Clientset
-	heapsterClient *metricsutil.HeapsterMetricsClient
-}
-
 func NewKubeClient(
 	clientset *kubernetes.Clientset,
-	heapsterClient *metricsutil.HeapsterMetricsClient,
-) *KubeClientType {
-	return &KubeClientType{
+) *KubeClient {
+	return &KubeClient{
 		clientset:      clientset,
-		heapsterClient: heapsterClient,
+		heapsterClient: metricsutil.DefaultHeapsterMetricsClient(clientset.Core()),
 	}
 }
 
 // Return all active pods in the specified namespace. Can also limit to a node if specified.
-func (k *KubeClientType) ActivePods(namespace, nodeName string) ([]api_v1.Pod, error) {
+func (k *KubeClient) ActivePods(namespace, nodeName string) ([]api_v1.Pod, error) {
 
 	// selector := fmt.Sprintf("status.phase!=%s,status.phase!=%s", string(api_v1.PodSucceeded), string(api_v1.PodFailed))
 	selector := fmt.Sprintf("status.phase!=%s", string(api_v1.PodSucceeded))
@@ -86,7 +80,7 @@ func NodeCapacity(node *api_v1.Node) api_v1.ResourceList {
 }
 
 // Return NodeResources struct for the specified object.
-func (k *KubeClientType) NodeResources(node *api_v1.Node, namespace string) (*NodeResources, error) {
+func (k *KubeClient) NodeResources(node *api_v1.Node, namespace string) (*NodeResources, error) {
 
 	metricsList, err := k.heapsterClient.GetNodeMetrics(node.GetName(), labels.Everything().String())
 	if err != nil {
@@ -130,7 +124,7 @@ func (k *KubeClientType) NodeResources(node *api_v1.Node, namespace string) (*No
 }
 
 // Returns the resource usage of the pods in the specified namespace.
-func (k *KubeClientType) ContainerNodeResources(namespace string) (map[string]*ContainerUsage, error) {
+func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*ContainerUsage, error) {
 
 	allNamespaces := false
 	if namespace == "" {
@@ -206,7 +200,7 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 
 }
 
-func (k *KubeClientType) Containers(namespace string) ([]*ContainerInfo, error) {
+func (k *KubeClient) Containers(namespace string) ([]*ContainerInfo, error) {
 
 	resource_map, err := k.ContainerNodeResources(namespace)
 	if err != nil {
@@ -256,7 +250,7 @@ func (k *KubeClientType) Containers(namespace string) ([]*ContainerInfo, error) 
 }
 
 // Return a list of container resources for all containers running on the specified node
-func (k *KubeClientType) NodeContainerResources(namespace, nodeName string) (resources []*ContainerResources, err error) {
+func (k *KubeClient) NodeContainerResources(namespace, nodeName string) (resources []*ContainerResources, err error) {
 
 	mc := k.clientset.Core().Nodes()
 	node, err := mc.Get(nodeName, metav1.GetOptions{})
@@ -307,7 +301,7 @@ func (k *KubeClientType) NodeContainerResources(namespace, nodeName string) (res
 }
 
 // Return the resources in use by containers in the cluster as list of ContainerResources
-func (k *KubeClientType) ContainerResources(namespace string) (resources []*ContainerResources, err error) {
+func (k *KubeClient) ContainerResources(namespace string) (resources []*ContainerResources, err error) {
 	nodes, err := k.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -325,7 +319,7 @@ func (k *KubeClientType) ContainerResources(namespace string) (resources []*Cont
 }
 
 // Return the total cluster capacity as a ResourceList
-func (k *KubeClientType) ClusterCapacity() (capacity api_v1.ResourceList, err error) {
+func (k *KubeClient) ClusterCapacity() (capacity api_v1.ResourceList, err error) {
 
 	nodes, err := k.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -353,7 +347,7 @@ func (k *KubeClientType) ClusterCapacity() (capacity api_v1.ResourceList, err er
 }
 
 // Returns events from the specified namespace sorted by timestamp
-func (k *KubeClientType) Events(namespace string) ([]api_v1.Event, error) {
+func (k *KubeClient) Events(namespace string) ([]api_v1.Event, error) {
 
 	eventList, err := k.clientset.Core().Events(namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -369,7 +363,7 @@ func (k *KubeClientType) Events(namespace string) ([]api_v1.Event, error) {
 }
 
 // Returns nodes in the cluster
-func (k *KubeClientType) Nodes() ([]api_v1.Node, error) {
+func (k *KubeClient) Nodes() ([]api_v1.Node, error) {
 	nodeList, err := k.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err

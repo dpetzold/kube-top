@@ -1,17 +1,11 @@
-package main
+package kube
 
 import (
 	"fmt"
-	"time"
 
 	humanize "github.com/dustin/go-humanize"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/duration"
 )
-
-func timeToDurationStr(t time.Time) string {
-	return duration.ShortHumanDuration(time.Now().Sub(t))
-}
 
 func calcPercentage(dividend, divisor int64) int {
 	return int(float64(dividend) / float64(divisor) * 100)

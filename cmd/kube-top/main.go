@@ -5,14 +5,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/onrik/logrus/filename"
+	"github.com/Sirupsen/logrus"
+
+	"github.com/dpetzold/kube-top/pkg/global"
+	"github.com/dpetzold/kube-top/pkg/kube"
+	"github.com/dpetzold/kube-top/pkg/ui"
+
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/pkg/kubectl/metricsutil"
 )
-
-var GitCommit string
 
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
@@ -20,6 +23,8 @@ func homeDir() string {
 	}
 	return os.Getenv("USERPROFILE") // windows
 }
+
+var log = logrus.New()
 
 func main() {
 
@@ -37,11 +42,13 @@ func main() {
 
 	flag.Parse()
 
-	Globals.Namespace = *namespace
+	global.Namespace = *namespace
 
-	filenameHook := filename.NewHook()
-	filenameHook.Field = "source"
-	log.AddHook(filenameHook)
+	/*
+		filenameHook := filename.NewHook()
+		filenameHook.Field = "source"
+		log.AddHook(filenameHook)
+	*/
 
 	file, err := os.OpenFile("/tmp/kube-top.log", os.O_CREATE|os.O_WRONLY, 0666)
 	if err == nil {
@@ -61,7 +68,7 @@ func main() {
 	}
 
 	heapsterClient := metricsutil.DefaultHeapsterMetricsClient(clientset.Core())
-	Globals.KubeClient = NewKubeClient(clientset, heapsterClient)
+	global.KubeClient = kube.NewKubeClient(clientset, heapsterClient)
 
-	KubeTop()
+	ui.KubeTop()
 }

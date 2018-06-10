@@ -1,45 +1,46 @@
-package main
+package ui
 
 import (
 	"fmt"
 
-	ui "github.com/dpetzold/termui"
+	"github.com/dpetzold/kube-top/pkg/global"
+	"github.com/dpetzold/termui"
 )
 
-func NewEventsPanel(height int) *ui.Table {
-	p := ui.NewTable()
+func NewEventsPanel(height int) *termui.Table {
+	p := termui.NewTable()
 	p.Height = height
 	p.BorderLabel = "Events"
-	p.TextAlign = ui.AlignLeft
+	p.TextAlign = termui.AlignLeft
 	p.Separator = false
 	p.Headers = true
 	p.Analysis()
 	return p
 }
 
-func EventsFooter() *ui.Par {
+func EventsFooter() *termui.Par {
 	return DashboardFooter()
 }
 
 func ShowEvents() {
-	Globals.EventsPanel.Height = ui.TermHeight() - 1
-	ui.Body.Rows = []*ui.Row{
-		ui.NewRow(ui.NewCol(12, 0, Globals.EventsPanel)),
-		ui.NewRow(ui.NewCol(12, 0, EventsFooter())),
+	global.EventsPanel.Height = termui.TermHeight() - 1
+	termui.Body.Rows = []*termui.Row{
+		termui.NewRow(termui.NewCol(12, 0, global.EventsPanel)),
+		termui.NewRow(termui.NewCol(12, 0, EventsFooter())),
 	}
-	Globals.ActiveWindow = "EventsWindow"
+	global.ActiveWindow = "EventsWindow"
 }
 
-func updateEvents(eventsPanel *ui.Table) {
+func updateEvents(eventsPanel *termui.Table) {
 	eventRows := [][]string{
 		[]string{"Last Seen", "Count", "Name", "Kind", "Type", "Reason", "Message"},
 	}
 
-	events := Globals.Events
+	events := global.Events
 
 	for _, e := range events {
 		eventRows = append(eventRows, []string{
-			timeToDurationStr(e.LastTimestamp.Time),
+			TimeToDurationStr(e.LastTimestamp.Time),
 			fmt.Sprintf("%d", e.Count),
 			e.ObjectMeta.Name[0:20],
 			e.InvolvedObject.Kind,
@@ -49,7 +50,7 @@ func updateEvents(eventsPanel *ui.Table) {
 		})
 	}
 
-	max_rows := Globals.EventsPanel.Height - 3
+	max_rows := global.EventsPanel.Height - 3
 	if len(eventRows) > max_rows {
 		eventRows = eventRows[0:max_rows]
 	}

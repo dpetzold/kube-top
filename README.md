@@ -19,8 +19,8 @@ Aggregates and provides visual representation of the following kubectl commands:
 ## Run
 ```
 docker run -it \
-    -v/home/derrick/.kube:/.kube \
-    -v/home/derrick/.config/gcloud:/.config/gcloud \
+    -v${HOME}/.kube:/.kube \
+    -v${HOME}/.config/gcloud:/.config/gcloud \
     -v/etc/ssl/certs:/etc/ssl/certs \
     dpetzold/kube-top
 ```

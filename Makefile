@@ -11,11 +11,11 @@ vendor: glide.yaml
 
 
 docker-build:
-	docker build -t dpetzold/kube-top .
+	docker build --rm --no-cache -t dpetzold/kube-top .
 	docker push dpetzold/kube-top
 
 run:
-	docker run -it \
+	docker run --rm -it \
 		-v${HOME}/.kube:/.kube \
 		-v${HOME}/.config/gcloud:/.config/gcloud \
 		-v/etc/ssl/certs:/etc/ssl/certs \

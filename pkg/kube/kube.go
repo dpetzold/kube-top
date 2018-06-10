@@ -23,7 +23,7 @@ func NewKubeClient(
 }
 
 // Return all active pods in the specified namespace. Can also limit to a node if specified.
-func (k *KubeClient) ActivePods(namespace, nodeName string) ([]api_v1.Pod, error) {
+func (k *KubeClient) activePods(namespace, nodeName string) ([]api_v1.Pod, error) {
 
 	// selector := fmt.Sprintf("status.phase!=%s,status.phase!=%s", string(api_v1.PodSucceeded), string(api_v1.PodFailed))
 	selector := fmt.Sprintf("status.phase!=%s", string(api_v1.PodSucceeded))
@@ -71,7 +71,7 @@ func containerRequestsAndLimits(container *api_v1.Container) (reqs api_v1.Resour
 }
 
 // Return the nodes capacity.
-func NodeCapacity(node *api_v1.Node) api_v1.ResourceList {
+func nodeCapacity(node *api_v1.Node) api_v1.ResourceList {
 	allocatable := node.Status.Capacity
 	if len(node.Status.Allocatable) > 0 {
 		allocatable = node.Status.Allocatable
@@ -91,14 +91,14 @@ func (k *KubeClient) NodeResources(node *api_v1.Node, namespace string) (*NodeRe
 		return nil, fmt.Errorf("Got bad number of results from client.GetNodeMetrics")
 	}
 
-	pods, err := k.ActivePods(namespace, node.GetName())
+	pods, err := k.activePods(namespace, node.GetName())
 	if err != nil {
 		return nil, err
 	}
 
 	metrics := metricsList.Items[0]
 
-	capacity := NodeCapacity(node)
+	capacity := nodeCapacity(node)
 
 	cpuCapacity := capacity[api_v1.ResourceCPU]
 	memoryCapacity := capacity[api_v1.ResourceMemory]
@@ -124,7 +124,7 @@ func (k *KubeClient) NodeResources(node *api_v1.Node, namespace string) (*NodeRe
 }
 
 // Returns the resource usage of the pods in the specified namespace.
-func (k *KubeClient) ContainerNodeResources(namespace string) (map[string]*ContainerUsage, error) {
+func (k *KubeClient) containerNodeResources(namespace string) (map[string]*ContainerUsage, error) {
 
 	allNamespaces := false
 	if namespace == "" {
@@ -202,12 +202,12 @@ func evaluatePod(pod *api_v1.Pod) map[string]*ContainerStatus {
 
 func (k *KubeClient) Containers(namespace string) ([]*ContainerInfo, error) {
 
-	resource_map, err := k.ContainerNodeResources(namespace)
+	resource_map, err := k.containerNodeResources(namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	active, err := k.ActivePods(namespace, "")
+	active, err := k.activePods(namespace, "")
 	if err != nil {
 		return nil, err
 	}
@@ -258,12 +258,12 @@ func (k *KubeClient) NodeContainerResources(namespace, nodeName string) (resourc
 		return nil, err
 	}
 
-	activePodsList, err := k.ActivePods(namespace, nodeName)
+	activePodsList, err := k.activePods(namespace, nodeName)
 	if err != nil {
 		return nil, err
 	}
 
-	capacity := NodeCapacity(node)
+	capacity := nodeCapacity(node)
 
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/printers/internalversion/describe.go#L2970
 	for _, pod := range activePodsList {
@@ -330,7 +330,7 @@ func (k *KubeClient) ClusterCapacity() (capacity api_v1.ResourceList, err error)
 
 	for _, node := range nodes.Items {
 
-		allocatable := NodeCapacity(&node)
+		allocatable := nodeCapacity(&node)
 
 		for name, quantity := range allocatable {
 			if value, ok := capacity[name]; ok {

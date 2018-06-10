@@ -174,6 +174,7 @@ func KubeTop(kubeClient *kube.KubeClient, namespace string) {
 	}
 	defer termui.Close()
 
+	KubeClient = kubeClient
 	SortField = "CpuUsage"
 	NodePanel = NewNodePanel()
 	ContainerMaxes = make(map[string]*kube.ContainerMaxes)

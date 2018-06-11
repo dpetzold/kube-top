@@ -91,11 +91,14 @@ func updateNodes(nodePanel *termui.List) error {
 			MemoryColumn = append(MemoryColumn, memoryGauge)
 		}
 
+		r.MemoryCapacity.Quantity.Sub(*r.MemoryUsage.Quantity)
+		r.CpuCapacity.Quantity.Sub(*r.CpuUsage.Quantity)
+
 		memoryGauge.Percent = r.PercentMemory
-		memoryGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentMemory, r.MemoryUsage.String())
+		memoryGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentMemory, r.MemoryCapacity.String())
 
 		cpuGauge.Percent = r.PercentCpu
-		cpuGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentCpu, r.CpuUsage.String())
+		cpuGauge.Label = fmt.Sprintf(gauge_fmt, r.PercentCpu, r.CpuCapacity.String())
 	}
 
 	// XXX: Move this out

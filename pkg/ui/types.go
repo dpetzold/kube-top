@@ -12,6 +12,8 @@ const (
 	REFRESH_SECONDS     = 3
 	EVENTS_PANEL_HEIGHT = 15
 	NODE_PANEL_HEIGHT   = 9
+	NODE_DISPLAY_COUNT  = 3
+	NODE_DISPLAY_MAX    = 10
 
 	NodesWindow      Window = "Nodes"
 	DashboardWindow  Window = "Dashboard"

@@ -1,13 +1,23 @@
 FROM golang:1.10-alpine AS builder
-RUN apk add --no-cache git make
+RUN apk add --no-cache git make curl \
+  && (curl https://glide.sh/get | sh)
+
+ARG BASEDIR=/go/src/github.com/dpetzold/kube-top/
+
+RUN mkdir -p ${BASEDIR}
+WORKDIR ${BASEDIR}
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 
-RUN go get github.com/dpetzold/kube-top/cmd/kube-top
+COPY glide.* ${BASEDIR}
+RUN glide install -v
+
+COPY . .
+RUN  make build
 
 FROM scratch
 COPY --from=builder /tmp /tmp
-COPY --from=builder /go/bin/kube-top /
+COPY --from=builder /go/src/github.com/dpetzold/kube-top/kube-top /
 
 ENTRYPOINT ["/kube-top"]

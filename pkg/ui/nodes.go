@@ -66,9 +66,9 @@ func updateNodes(nodePanel *termui.List) error {
 		return CompareStruct(nodeResources, "CpuUsage", i, j, false)
 	})
 
-	columnMax := 3
+	columnMax := NODE_DISPLAY_COUNT
 	if ActiveWindow == NodesWindow {
-		columnMax = 10
+		columnMax = NODE_DISPLAY_MAX
 	}
 
 	for _, r := range nodeResources {
@@ -103,9 +103,7 @@ func updateNodes(nodePanel *termui.List) error {
 		termui.Body.Rows[0] = nodeRow()
 	}
 
-	max_rows := columnMax * 3
-
-	// log.Infof("%v %v %v", len(nodeResources), len(items), max_rows)
+	max_rows := columnMax * NODE_DISPLAY_COUNT
 
 	if len(items) > max_rows {
 		items = items[0:max_rows]

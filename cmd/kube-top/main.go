@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/dpetzold/kube-top/pkg/kube"
 	"github.com/dpetzold/kube-top/pkg/ui"
@@ -22,12 +22,11 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
-var log = logrus.New()
-
 func main() {
 
 	var (
 		kubeconfig *string
+		log        = logrus.New()
 	)
 
 	if home := homeDir(); home != "" {
@@ -39,12 +38,6 @@ func main() {
 	namespace := flag.String("namespace", "default", "Specify the namespace")
 
 	flag.Parse()
-
-	/*
-		filenameHook := filename.NewHook()
-		filenameHook.Field = "source"
-		log.AddHook(filenameHook)
-	*/
 
 	file, err := os.OpenFile("/tmp/kube-top.log", os.O_CREATE|os.O_WRONLY, 0666)
 	if err == nil {

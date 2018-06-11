@@ -11,7 +11,7 @@ vendor: glide.yaml
 
 
 docker-build:
-	docker build --rm --no-cache -t dpetzold/kube-top .
+	docker build --rm -t dpetzold/kube-top .
 	docker push dpetzold/kube-top
 
 run:

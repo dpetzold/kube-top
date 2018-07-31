@@ -83,7 +83,11 @@ func updateContainers(containersPanel *termui.Table) {
 		})
 	}
 
-	max_rows := ContainerPanel.Height - 3
+	max_rows := 1
+	if ContainerPanel.Height > 4 {
+		max_rows = ContainerPanel.Height - 3
+	}
+
 	if len(rows) > max_rows {
 		rows = rows[0:max_rows]
 	}
